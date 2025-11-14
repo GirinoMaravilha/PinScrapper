@@ -16,12 +16,22 @@ a utilização do programa.
 
 Classe: MaxFilter(logging.Filter)
 
-=> Classe que é uma sub da metaclasse "logging.Filter".
+=> Classe que cria um filtro para uma instancia "StreamHandler".
 
 Essa classe é utilizada para criar um filtro para um dos handlers da instancia do Logger
-criada pela função "configurando_logger". No caso, ela faz com que o "StreamHandler" do "Logger"
-não retorne mensangens de level "ERROR" para o console, e faça elas apenas aparecerem em um
-arquivo ".log".
+criada pela função "configurando_logger". No caso, ela faz com que o "StreamHandler" armazenado
+na variável "user_handler" do "Logger" não retorne mensangens de level "ERROR" para o console, e 
+faça elas apenas aparecerem em um arquivo ".log".
+
+
+Classe: DebugFilter(logging.Filter)
+
+=> Classe que cria um filtro para uma instancia "StreamHandler".
+
+Essa classe é utilizada para criar um filtro para um dos handlers da instancia do Logger
+criada pela função "configurando_logger". No caso, ela adiciona um filtro a instancia "StreamHandler"
+armazenada na variável "debug_handler", onde esse filtro apenas permite mensagens de nivel DEBUG
+aparecerem no console.
 
 """
 
