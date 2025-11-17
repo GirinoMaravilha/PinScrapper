@@ -15,6 +15,39 @@ import logging
 from utils import configurando_logger
 
 
+#Utilitarios
+
+def mock_parser(fila:asyncio.Queue,evento:asyncio.Event) -> str:
+
+    """ 
+
+    Função 'Mock' que emula um "Parser" para testar o método 'bot_crawler'.
+
+    Função que recebe valores do método 'bot_crawler' de uma instancia da classe 'CrawlerImagens'.
+    A função recebe valores e os retorna em formato de string para o console
+
+    Args:
+        fila (asyncio.Queue): Uma instancia da classe 'Queue' do módulo 'asyncio'.
+                              Usada para retirar valores da pipeline e retornar ao console.
+
+        evento (asyncio.Event): Uma instancia da classe 'Event' do módulo 'asyncio'.
+                                Usada para verificar a flag interna da instancia se esta igual
+                                a 'True' ou 'False'.
+
+    Returns:
+        str: Umá pagina HTML com as imagens que queremos coletar reveladas pelo Javascript.
+
+    Raises:
+        asyncio.TimeoutError: Exceção levantada pela função 'wait_for' do módulo 'asyncio.
+                              Exceção é levantada quando a tarefa demora demais para retirar
+                              uma valor da pipeline.
+    
+    """
+
+    pass
+
+
+
 #Classes
 
 class CrawlerImagens:
@@ -22,34 +55,66 @@ class CrawlerImagens:
     def __init__(self,logger:logging.Logger, lista_prompt:list[str]):
 
         self._driver = webdriver.Chrome()
-        self._lista_prompt = lista_prompt
+        self.lista_prompt = lista_prompt
         self.logger = logger
     
     @property
     def driver(self):
-        raise AttributeError("O atributo self._driver não pode ser acessado diretamente!")
+        return self._driver
     
     @driver.setter
     def driver(self, valor):
         raise AttributeError("O atributo self._driver não pode ter seu valor modificado!")
-    
-    async def bot_crawler(self, max_bots:int=3):
+
+    async def crawler_main(self):
         
         ### Variáveis ###
 
 
+        #Instancia do asyncio.Task que recebe como argumento o método 'bot_crawler'
+        bot_c = None
+
+        ### Código ###
+
+        #Iniciando iteração dos prompts
+        self.logger.info("Crawler Iniciado!\n")
+        self.logger.debug("Método 'crawler_main' iniciado, iniciando task 'bot_crawler' para" \
+        "depositar, paginas HTML com imagens disponiveis, na pipeline")
+        task = asyncio.create_task(self.bot_crawler)
+
+
+    async def bot_crawler(self,max_img:int=10):
+        
+        ### Variáveis ###
+
+        #Instancia WebDriverWait
+        wait = WebDriverWait(self.driver, 5)
+
+        #Lista que armazena quantidade de elementos contendo imagens
+        lista_div_img = []
         
         ### Código ###
-        pass
+
+        #Iniciando iteração dos prompts
+        self.logger.info("Entrando no site do Pinterest....")
+        self.logger.debug("Método 'crawler_main' iniciado, iniciando itereção de valores da lista" \
+        "'self.lista_prompt'")
+        for prompt in self.lista_prompt:
+            #Entrando no site e achando o input de pesquisa
+            self.logger.info("Começando a procurar imagens")
+            self.driver.get("https://br.pinterest.com/ideas")
 
         
         
 #Função Main para DEBUG
 
 def main():
-    
+
+    #Testando instancia do CrawlerImagens e geração de bots com uma Queue
+    mock_lista_prompt = ["Lucy Heartfilia", "Nami", "Zelda"] 
     logger = configurando_logger()
-    crawler = CrawlerImagens()
+    crawler = CrawlerImagens(logger,mock_lista_prompt)
+    crawler.driver.quit()
 
 
 
