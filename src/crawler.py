@@ -11,40 +11,46 @@ from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 
 import asyncio
+import logging
 from utils import configurando_logger
 
 
 #Classes
 
-class ParserImagens:
+class CrawlerImagens:
 
-    def __init__(self, lista_prompt:list[str]):
+    def __init__(self,logger:logging.Logger, lista_prompt:list[str]):
 
-        self._webdriver = webdriver.Chrome()
+        self._driver = webdriver.Chrome()
         self._lista_prompt = lista_prompt
+        self.logger = logger
     
     @property
-    def webdriver(self):
-        raise AttributeError("O atributo self._webdriver não pode ser acessado diretamente!")
+    def driver(self):
+        raise AttributeError("O atributo self._driver não pode ser acessado diretamente!")
     
-    @webdriver.setter
-    def webdriver(self):
-        raise AttributeError("O atributo self._webdriver não pode ter seu valor modificado.")
+    @driver.setter
+    def driver(self, valor):
+        raise AttributeError("O atributo self._driver não pode ter seu valor modificado!")
     
-    def parsing(self):
+    async def bot_crawler(self, max_bots:int=3):
+        
+        ### Variáveis ###
+
+
+        
+        ### Código ###
         pass
 
         
         
-#Função Main
+#Função Main para DEBUG
 
 def main():
     
-    parser = ParserImagens()
-    print(parser.ola)
-    parser.ola = "oi"
-    parser.ola = 2
-    print(parser.ola)
+    logger = configurando_logger()
+    crawler = CrawlerImagens()
+
 
 
 if __name__ == "__main__":
