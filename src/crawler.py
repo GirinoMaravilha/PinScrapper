@@ -17,7 +17,7 @@ from utils import configurando_logger
 
 #Utilitarios
 
-def mock_parser(fila:asyncio.Queue,evento:asyncio.Event) -> str:
+async def mock_parser(numero:int,logger:logging.Logger,fila:asyncio.Queue,evento:asyncio.Event) -> str:
 
     """ 
 
@@ -27,12 +27,17 @@ def mock_parser(fila:asyncio.Queue,evento:asyncio.Event) -> str:
     A função recebe valores e os retorna em formato de string para o console
 
     Args:
+        numero (int): Número de identificação do 'mock_parser'.
+
         fila (asyncio.Queue): Uma instancia da classe 'Queue' do módulo 'asyncio'.
                               Usada para retirar valores da pipeline e retornar ao console.
 
         evento (asyncio.Event): Uma instancia da classe 'Event' do módulo 'asyncio'.
                                 Usada para verificar a flag interna da instancia se esta igual
                                 a 'True' ou 'False'.
+        
+        logger (logging.Logger): Uma instancia da classe 'Logger' configurada para gerar logs
+                                 durante a execução do código.
 
     Returns:
         str: Umá pagina HTML com as imagens que queremos coletar reveladas pelo Javascript.
@@ -44,8 +49,34 @@ def mock_parser(fila:asyncio.Queue,evento:asyncio.Event) -> str:
     
     """
 
-    pass
+    ### Variáveis ###
 
+    # Buffer que recebe páginas HTML da pipeline
+    pagina_html = ""
+
+    ### Código ###
+
+    while True:
+
+        logger.debug(f"[Parser - {numero}]Checando se o fluxo da pipeline ja terminou.")
+        if fila.empty() and evento.set():
+            logger.debug(f"[Parser - {numero}] Pipeline vazia e produção do Crawler finalizada! Encerrando parser.")
+            return pagina_html
+
+        try:
+            logger.debug(f"[Parser - {numero}]Retirando página HTML da pipeline.")
+            pagina_html += "\n\n\n"
+            pagina_html += await asyncio.wait_for(fila.get(),4)
+            logger.debug(f"[Parser - {numero}]Retirou página HTML da pipeline e adiconou ao buffer.")
+            logger.debug(f"[Parser - {numero}]Chamando método 'sleep' para deixar outras tarefas seguirem.")
+            await asyncio.sleep(2)
+        
+        except asyncio.TimeoutError as error:
+            logger.debug(f"[Parser - {numero}] Demorou demais. Seguindo em frente com as tarefas.")
+            continue
+        
+        #Chamando método 'task_done' para indicar a Queue que um valor foi processado
+        fila.task_done()
 
 
 #Classes
