@@ -8,12 +8,12 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import InvalidSelectorException
 
-
-import asyncio
 import logging
 from utils import configurando_logger
-from utils import mock_parser
+import time
+from traceback import print_exc
 
 
 #Classes
@@ -61,7 +61,7 @@ class CrawlerImagens:
 
         #Iniciando iteração dos prompts
 
-        self.logger.info("Crawler Iniciado!\n")
+        self.logger.info("Crawler Iniciado!")
         self.logger.debug("[BOT-CRAWLER] Iniciando método 'bot_crawler' para retornar paginas HTML com links de PIN's disponíveis.")
 
         self.logger.info("Entrando no site do Pinterest....")
@@ -70,10 +70,13 @@ class CrawlerImagens:
 
         for prompt in self.lista_prompt:
             #Entrando no site e achando o input de pesquisa
-            self.logger.info(f"Começando a procurar imagens do prompt => {prompt}")
+            self.logger.info(f"\nComeçando a procurar imagens do prompt => {prompt}")
             self.logger.debug(f"[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
 
             self.driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
+
+            #DEBUG
+            time.sleep(4)
 
             #Inciando iteração para verificar se a quantidade de imagens no HTML Estático corresponde ao valor de 'max_img'.
             self.logger.debug("[BOT-CRAWLER] Verificando a quantidade de elementos contendo as imagens na página " \
@@ -81,12 +84,15 @@ class CrawlerImagens:
             while True:
                 #Tentando encontrar os elementos contendo as imagens na pagina
                 try:
-                    lista_div_img = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@class='V3gVHw' and @role='listitem']")))
+                    lista_div_img = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@role='listitem']")))
 
                     #Veririfcando se a quantidade bate com a que foi requisitada
                     if len(lista_div_img) < max_img:
-                        self.logger.info(f"Achamos apenas {len(lista_div_img)} imagens para o prompt => {prompt}")
-                        self.logger.info("Vamos procurar mais....")
+                        self.logger.info(f"\nAchamos apenas {len(lista_div_img)} imagens para o prompt => {prompt}")
+                        self.logger.info("Vamos procurar mais....\n")
+
+                        #DEBUG
+                        time.sleep(4)
                         
                         #Vamos "rolar" a tela para baixo e tentar fazer o javascript revelar mais imagens
                         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -94,21 +100,23 @@ class CrawlerImagens:
                     else:
                         #Salvando o HTML estatico no dicionario 'dict_pagina_html' tendo a chave como prompt
                         self.logger.debug(f"[BOT-CRAWLER] Achamos {len(lista_div_img)} imagens da requisição de {max_img} imagens.")
-                        self.logger.info(f"Achamos todas as imagens! Salvando a pagina do prompt => {prompt}")
+                        self.logger.info(f"\nAchamos todas as imagens! Salvando a pagina do prompt => {prompt}")
                         dict_pagina_html[prompt] = self.driver.page_source
                         break
                 
                 except TimeoutException as error:
                     #Tratando o problema do bloco de login "congelando" a página
                     self.logger.debug(f"[BOT-CRAWLER] Exceção 'TimeoutException' levantada com o prompt => {prompt}")
-                    self.logger.info(f"Bloco de login apareceu no prompt => {prompt}")
+                    self.logger.info(f"\nBloco de login apareceu no prompt => {prompt}")
                     self.logger.info(f"Fechando ele para continuar com o fluxo...")
 
+                    time.sleep(4)
+                    self.logger.debug(f"[BOT-CRAWLER] Chamando o método 'self.verifica_bloco_login' para fechar o prompt de login do site.")
                     self.verifica_bloco_login()
         
         #Retornando dicionario com as paginas HTML
         self.logger.debug("[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
-        self.logger.info("Captura das páginas terminada!")
+        self.logger.info("\nCaptura das páginas terminada!")
         return dict_pagina_html
                         
     def verifica_bloco_login(self) -> bool:
@@ -135,7 +143,11 @@ class CrawlerImagens:
                 botao_fechar.click()
                 return True
         
-        except NoSuchElementException as error:
+        except InvalidSelectorException as error:
+            self.logger.info("Bloco Login não encontrado! Erro no programa!")
+            self.logger.error(f"[BOT-CRAWLER] Bloco login não encontrado." /
+                              f"Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens. => {error}\n{print_exc()}")
+            
             return False
 
 
@@ -145,8 +157,10 @@ def main():
 
     #Testando instancia do CrawlerImagens e geração de bots com uma Queue
     mock_lista_prompt = ["Lucy Heartfilia", "Nami", "Zelda"] 
-    logger = configurando_logger()
+    logger = configurando_logger(debug_mode=True)
     crawler = CrawlerImagens(logger,mock_lista_prompt)
+    crawler.bot_crawler()
+    
     crawler.driver.quit()
 
 
