@@ -28,8 +28,6 @@ class CrawlerPinterest:
         self._driver = driver
         self.lista_prompt = lista_prompt
         self.logger = logger
-        self._lista_cache= []
-        #TODO Corrigir, ou apagar o cacheamento!
         
     @property
     def driver(self):
@@ -38,16 +36,11 @@ class CrawlerPinterest:
     @driver.setter
     def driver(self, valor):
         raise AttributeError("O atributo self._driver não pode ter seu valor modificado diretamente!")
-    
-    @property
-    def lista_cache(self):
-        return self._lista_cache
-    
-    @lista_cache.setter
-    def lista_cache(self,valor):
-        raise AttributeError("O atributo self._lista_cache não pode ter seu valor modificado diretamente!")
 
     def bot_crawler(self,max_img:int=10) -> dict[str:str]:
+
+        #TODO - Ainda não foi tratado o problema de um prompt que não possui imagens nele!
+        #TODO - Ainda não foi tratado o prblema de um prompt que insinua nudez ou sexo!
         
         ### Variáveis ###
 
