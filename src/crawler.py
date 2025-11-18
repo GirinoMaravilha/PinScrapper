@@ -11,13 +11,11 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSelectorException
 
-
-
 import logging
 from utils import configurando_logger
+from utils import salva_html
 import time
 from traceback import print_exc
-
 
 #Classes
 
@@ -80,6 +78,8 @@ class CrawlerPinterest:
             while True:
                 #Tentando encontrar os elementos contendo as imagens na pagina
                 try:
+                    #FIXME => BUG ocorrendo onde mais elementos 'div' que nao tem nada a ver com pins de imagens estao sendo capturados
+                    #CORRIGIR!!!
                     lista_div_img = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@role='listitem']")))
 
                     #Veririfcando se a quantidade bate com a que foi requisitada
@@ -101,6 +101,7 @@ class CrawlerPinterest:
                         break
                 
                 except TimeoutException as error:
+                    #TODO Modificar essa parte para tratar os dois bugs de "Não encontrado imagens"
                     #Tratando o problema do bloco de login "congelando" a página
                     self.logger.debug(f"\n[BOT-CRAWLER] Exceção 'TimeoutException' levantada com o prompt => {prompt}")
                     self.logger.info(f"Bloco de login apareceu no prompt => {prompt}")
@@ -160,10 +161,14 @@ def main():
     mock_lista_prompt = ["Lucy Heartfilia", "Nami", "Zelda", "Android 18"] 
     logger = configurando_logger(debug_mode=True)
     driver = webdriver.Chrome()
+    dict_html = {}
 
     crawler = CrawlerPinterest(driver,logger,mock_lista_prompt)
-    crawler.bot_crawler()
+    dict_html = crawler.bot_crawler()
     crawler.driver.quit()
+
+    #Verificando páginas capturadas em arquivo
+    salva_html(dict_html)
 
 
 if __name__ == "__main__":
