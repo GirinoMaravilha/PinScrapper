@@ -38,6 +38,7 @@ aparecerem no console.
 import logging
 import time
 import asyncio
+from pathlib import Path
 
 
 def configurando_logger(debug_mode:bool=False) -> logging.Logger:
@@ -74,7 +75,7 @@ def configurando_logger(debug_mode:bool=False) -> logging.Logger:
     #Cofigurando Stream Handler para DEBUG
     debug_handler = logging.StreamHandler()
     debug_handler.setLevel(logging.DEBUG)
-    debug_handler.addFilter(DebugFIlter())
+    debug_handler.addFilter(DebugFilter())
     debug_handler.setFormatter(logging.Formatter(fr"%(message)s - %(asctime)s",datefmt="%H:%M:%S"))
 
 
@@ -159,10 +160,44 @@ async def mock_parser(numero:int,logger:logging.Logger,fila:asyncio.Queue,evento
         fila.task_done()
 
 
+def salva_html(dict_html:dict[str:str]):
+
+    """
+    
+    Função que recebe um dicionário de páginas HTML e salva elas em um diretório.
+
+    Args:
+        dict_html (dict[str:str]): Dicionario contendo as paginas HTML, tendo como chaves os prompts
+                                   que as geraram.
+    
+    """
+
+    ### Variáveis ###
+
+    #Variavel que recebe uma instancia da Classe 'Path'
+    p = None
+
+    #Variável que armazena o tempo atual
+    tempo = ""
+
+    ### Código ###
+
+    #Capturando o tempo atual
+    tempo = time.strftime(fr"%d %m %Y - %H %M %S", time.localtime())
+
+    #Criando o 'path' e o diretório onde vai ser salvas páginas
+    p = Path(".") / f"Paginas_HTML {tempo}"
+    p.mkdir(exist_ok=True)
+
+    #Iterando pelas paginas e prompts para criar um arquivo texto com o HTML
+    for prompt,pagina in dict_html.items():
+        with open(f"{p}/{prompt}.txt", "w", encoding="UTF-8") as arq:
+            arq.write(pagina)
+
 
 #Classes
 
-class DebugFIlter(logging.Filter):
+class DebugFilter(logging.Filter):
     
     def filter(self, record:logging.LogRecord) -> bool:
         
