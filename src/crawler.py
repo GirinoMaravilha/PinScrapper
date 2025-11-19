@@ -39,11 +39,14 @@ class CrawlerPinterest:
 
         #TODO - Ainda não foi tratado o problema de um prompt que não possui imagens nele!
         #TODO - Ainda não foi tratado o prblema de um prompt que insinua nudez ou sexo!
+        #TODO - Falha na comexão ao servidor pelo método 'get' do driver!
+        #BUG - Crawler verificando mais elementos que apenas os 'pins' de imagem
+         
         
         ### Variáveis ###
 
         #Instancia WebDriverWait
-        wait = WebDriverWait(self.driver, 5)
+        wait = WebDriverWait(self.driver, 10)
 
         #Lista que armazena quantidade de elementos contendo imagens
         lista_div_img = []
@@ -108,8 +111,12 @@ class CrawlerPinterest:
                     self.logger.info(f"Lidando com ela para continuar com o fluxo...")
 
                     time.sleep(4)
-                    self.logger.debug(f"[BOT-CRAWLER] Chamando o método 'self.verifica_interrupcao' para lidar com a interrupção no 'crawling' do site.")
-                    self.verifica_interrupcao()
+                    self.logger.debug(f"\n[BOT-CRAWLER] Chamando o método 'self.verifica_interrupcao' para lidar com a interrupção no 'crawling' do site.")
+                    
+                    #Caso a interrupção for por falta de imagens seja "NSFW" ou "prompt sem imagens" não tem porque continuar a iteração. 
+                    #Quebramos o ciclo 'while' e seguimos para o próximo prompt.
+                    if not self.verifica_interrupcao(prompt):
+                        break
         
         #Retornando dicionario com as paginas HTML
         self.logger.debug("\n[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
@@ -135,6 +142,10 @@ class CrawlerPinterest:
         desenvolvedor. Nessa situação a exceção 'InvalidSelectorException' é levantada, e um relatório
         sobre o erro é gerado.
 
+        PS: A lista é escolhida propositalmente como objeto para armazenar o WebElement representante das 
+            interrupções de falta de imagem e NSFW justamente porque, caso nenhum elemento for encontrado,
+            o "find_elements" devolve uma lista vazia, e não levanta uma Exceção como o caso do "find_element".
+
         Args:
             prompt (str): A string do prompt que esta sendo usado no momento para o 'crawling' de 'pins'.
         
@@ -152,15 +163,39 @@ class CrawlerPinterest:
         botao_fechar = None
 
         #Lista que vai verificar elemento de bloqueio relacionado a "nudez" no prompt
-        nude = []
+        nsfw = []
 
         #Lista que vai verificar elemnto de bloqueio a "nenhuma imagem encontrada"
         no_img = []
 
         ### Código ###
 
+        self.logger.debug("\nIniciando método 'verifica_interrupção'")
+        
+        #Verificando se a interrupção é causada pelo prompt não retornar nenhuma imagem.
+        self.logger.debug(f"\n[BOT-CRAWLER] Verificando se o problema é não ter retornado nenhum pin do prompt => {prompt}")
+        no_img = self.driver.find_elements(By.XPATH,"//div[text()='Não foi possível encontrar Pins para esta pesquisa.']")
+        
+        #Ação caso for encontrado o texto para o problema de nenhum pin retornado pelo prompt
+        if no_img:
+            self.logger.debug(f"\n[BOT-CRAWLER] O problema da interrupção foi que nenhum pin retornou pelo prompt => {prompt}")
+            self.logger.info(f"Achamos o problema! Nenhuma imagem foi retornada para o prompt => {prompt}")
+            self.logger.info("Seguindo com o a pesquisa de 'pins' para próximo prompt....")
+            return False
+        
+        #Verificando se a interrupção é causada pelo prompt insinuar conteúdo NSFW
+        self.logger.debug(f"\n[BOT-CRAWLER] Verificando se o problema é possivel conteudo NSFW retornado pelo prompt => {prompt}")
+        #TODO Pode ser que de problema pelo espaço no texto do XPATH!
+        nsfw = self.driver.find_elements(By.XPATH,"//span[text()='Pins sobre esse interesse costumam violar as ' or text()='Nudez é permitida no Pinterest, mas com ressalvas. Certifique-se de que entendeu ']")
 
-
+        #Ação caso encontrado mensagem sobre bloqueio da requisição por conteudo NSFW
+        if nsfw:
+            self.logger.debug(f"\n[BOT-CRAWLER] O problema da interrupção foi o prompt insinuar conteúdo NSFW => {prompt}")
+            self.logger.info(f"Achamos o problema! Nenhuma imagem foi retornada para o prompt por ele insinuar NSFW => {prompt}")
+            self.logger.info("Seguindo com o a pesquisa de 'pins' para próximo prompt....")
+            return False
+        
+        #Caso não for problemas com o prompt fornecido, verificamos se o bloco de 'login' de bloqueando o acesso do crawler ao site
         try:
             bloco_login = self.driver.find_element(By.XPATH, "div//[@data-test-id='login-modal-default' and @class='ADXRXN']")
             if bloco_login:
@@ -170,12 +205,12 @@ class CrawlerPinterest:
         
         except InvalidSelectorException as error:
 
-            #Problema grave. Algo esta interrompendo o fluxo e precisa ser consertado
+            #Problema grave. Algo esta interrompendo o fluxo e que o PinScrapper não consegue lidar
             #Fazendo limpeza e encerrando programa
             self.driver.quit()
 
-            self.logger.info("Bloco Login não encontrado! Erro grave no programa! De uma olhada no log de erro 'Error.log'!")
-            self.logger.error(f"[BOT-CRAWLER] Bloco login não encontrado." /
+            self.logger.info("Bloco Login e textos não encontrados! Erro grave no programa! De uma olhada no log de erro 'Error.log'!")
+            self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados." /
                               f"Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens. => {error}\n{print_exc()}")
             
             raise InvalidSelectorException
@@ -186,7 +221,7 @@ class CrawlerPinterest:
 def main():
 
     #Testando instancia do CrawlerImagens na captura de páginas HTML
-    mock_lista_prompt = ["Lucy Heartfilia", "Nami", "Zelda", "Android 18"] 
+    mock_lista_prompt = ["Lucy Heartfilia", "Nami hot sex", "Princess Zelda", "Android 18", "japanese sex"] 
     logger = configurando_logger(debug_mode=True)
     driver = webdriver.Chrome()
     dict_html = {}
