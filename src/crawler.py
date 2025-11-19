@@ -37,10 +37,16 @@ class CrawlerPinterest:
 
     def bot_crawler(self,max_img:int=10) -> dict[str:str]:
 
-        #TODO - Ainda não foi tratado o problema de um prompt que não possui imagens nele!
-        #TODO - Ainda não foi tratado o prblema de um prompt que insinua nudez ou sexo!
-        #TODO - Falha na comexão ao servidor pelo método 'get' do driver!
-        #BUG - Crawler verificando mais elementos que apenas os 'pins' de imagem
+        #TODO - Ainda não foi tratado o problema de um prompt que não possui imagens nele! - Ok! :D
+        #TODO - Ainda não foi tratado o prblema de um prompt que insinua nudez ou sexo! - Ok! :D
+        
+        #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver!
+        #BUG -  Crawler verificando mais elementos que apenas os 'pins' de imagem
+        #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
+        #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
+        #FIXME - O pinterest no 'lazy_loading', quando tem muita imagens na tela, ele vai apagando as
+        #       imagens de tras e adiconando mais a frente. A ideia provavelmente é usar o 'extend' do objeto lista para somar uma nova
+        #       lista de pins capturados a antiga.
          
         
         ### Variáveis ###
@@ -48,11 +54,14 @@ class CrawlerPinterest:
         #Instancia WebDriverWait
         wait = WebDriverWait(self.driver, 10)
 
-        #Lista que armazena quantidade de elementos contendo imagens
-        lista_div_img = []
+        #Lista que armazena os links de pins que vao ser salvos no 'dict_lista_link'
+        lista_pin_final= []
+
+        #Lista que armazena os links de pins de cada requisição 'find_elements'
+        lista_pin_req = []
 
         #Dicionario que armazena cada pagina HTML com a chave sendo seu respectivo prompt
-        dict_pagina_html = {}
+        dict_lista_link = {}
         
         ### Código ###
 
@@ -81,9 +90,9 @@ class CrawlerPinterest:
             while True:
                 #Tentando encontrar os elementos contendo as imagens na pagina
                 try:
-                    #FIXME => BUG ocorrendo onde mais elementos 'div' que nao tem nada a ver com pins de imagens estao sendo capturados
-                    #CORRIGIR!!!
-                    lista_div_img = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@role='listitem']")))
+                    
+                    #Aqui tentamos pegar todos os links de PIN dos cards da tela
+                    lista_div_img = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@data-test-id='pinWrapper']/a")))
 
                     #Veririfcando se a quantidade bate com a que foi requisitada
                     if len(lista_div_img) < max_img:
@@ -100,7 +109,7 @@ class CrawlerPinterest:
                         #Salvando o HTML estatico no dicionario 'dict_pagina_html' tendo a chave como prompt
                         self.logger.debug(f"\n[BOT-CRAWLER] Achamos {len(lista_div_img)} imagens da requisição de {max_img} imagens.")
                         self.logger.info(f"Achamos todas as imagens! Salvando a pagina do prompt => {prompt}")
-                        dict_pagina_html[prompt] = self.driver.page_source
+                        dict_lista_link[prompt] = self.driver.page_source
                         break
                 
                 except TimeoutException as error:
@@ -121,7 +130,44 @@ class CrawlerPinterest:
         #Retornando dicionario com as paginas HTML
         self.logger.debug("\n[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
         self.logger.info("Captura das páginas terminada!")
-        return dict_pagina_html
+        return dict_lista_link
+    
+    def verifica_pin(self, lista_pin_final:list[str], lista_pin_req:list[str]) -> None:
+
+        """
+        Método utilizado para verificar quais os links de 'pins' da listad de requisição 'lista_pins_req'
+        existem dentro da lista de links de 'pins' final que é a que vai ficar atribuida ao prompt no dicionario
+        devolvido pelo método 'bot_crawler'
+
+        Esse método foi criado pois o Pinterest tem uma abordagem de, com o javascript, ir 'desativando' os cards de pin que esta fora da
+        tela e 'ativando' os cards novos a cada rolamento da tela. Ele faz isso provavelmente para nao deixar todos os cards
+        revelados, o que faria o navegador ficar muito lento.
+
+        Portanto a cada rolamento do "execute_script" os cards antigos "somem" e os cards posteriores que estavam escondidos pelo javascript
+        "aparecem". Dessa forma não tem como, por exemplo, revelar todos os cards com o "rolamento" e capturar a pagina inteira. O crawling
+        tem que acontecer de maneira "segmentada", capturando links dos pins que esta na tela, rolando a tela para baixo, e realizando a captura
+        de novo. 
+        
+        O problema é que muitas vezes o rolamento não é o suficiente para capturar apenas links de pins novos, ou seja, que ja não foram capturados.
+        Muitas vezes alem de links novos, links antigos tambem são capturados.
+        
+        Dessa forma esse método foi criado para resolver isso. A cada requisição, cada link da lista de links capturados dos pins é utilizado em uma
+        verificação onde é checado se ele ja existe na lista de links final 'lista_pin_final', se ja existir nada acontece, agora se não existir
+        ele é adicionado a ela.
+
+        Args:
+            lista_pin_final (list[str]): Lista contendo todos os links ja salvos e filtrados.
+
+            lista_pin_req(list[str]): Lista contendo os links da ultima requisição que precisam ser filtrados.
+        
+        """
+        
+        #Vamor iterar cada item da lista final para comparar com a nova requisição
+        for link_r in lista_pin_req:
+            if not link_r in lista_pin_final:
+                lista_pin_final.append(link_r)
+          
+
                         
     def verifica_interrupcao(self, prompt:str) -> bool:
         
@@ -185,7 +231,6 @@ class CrawlerPinterest:
         
         #Verificando se a interrupção é causada pelo prompt insinuar conteúdo NSFW
         self.logger.debug(f"\n[BOT-CRAWLER] Verificando se o problema é possivel conteudo NSFW retornado pelo prompt => {prompt}")
-        #TODO Pode ser que de problema pelo espaço no texto do XPATH!
         nsfw = self.driver.find_elements(By.XPATH,"//span[text()='Pins sobre esse interesse costumam violar as ' or text()='Nudez é permitida no Pinterest, mas com ressalvas. Certifique-se de que entendeu ']")
 
         #Ação caso encontrado mensagem sobre bloqueio da requisição por conteudo NSFW
@@ -210,8 +255,7 @@ class CrawlerPinterest:
             self.driver.quit()
 
             self.logger.info("Bloco Login e textos não encontrados! Erro grave no programa! De uma olhada no log de erro 'Error.log'!")
-            self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados." /
-                              f"Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens. => {error}\n{print_exc()}")
+            self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados. Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens. => {error}\n{print_exc()}")
             
             raise InvalidSelectorException
         
@@ -221,7 +265,7 @@ class CrawlerPinterest:
 def main():
 
     #Testando instancia do CrawlerImagens na captura de páginas HTML
-    mock_lista_prompt = ["Lucy Heartfilia", "Nami hot sex", "Princess Zelda", "Android 18", "japanese sex"] 
+    mock_lista_prompt = ["Lucy Heartfilia","Android 18", "Nami","Digimon 1 Mimi adult","Princess Zelda"] 
     logger = configurando_logger(debug_mode=True)
     driver = webdriver.Chrome()
     dict_html = {}
