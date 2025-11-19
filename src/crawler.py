@@ -104,23 +104,43 @@ class CrawlerPinterest:
                     #TODO Modificar essa parte para tratar os dois bugs de "Não encontrado imagens"
                     #Tratando o problema do bloco de login "congelando" a página
                     self.logger.debug(f"\n[BOT-CRAWLER] Exceção 'TimeoutException' levantada com o prompt => {prompt}")
-                    self.logger.info(f"Bloco de login apareceu no prompt => {prompt}")
-                    self.logger.info(f"Fechando ele para continuar com o fluxo...")
+                    self.logger.info(f"Alguma interrupção aconteceu no prompt => {prompt}")
+                    self.logger.info(f"Lidando com ela para continuar com o fluxo...")
 
                     time.sleep(4)
-                    self.logger.debug(f"[BOT-CRAWLER] Chamando o método 'self.verifica_bloco_login' para fechar o prompt de login do site.")
-                    self.verifica_bloco_login()
+                    self.logger.debug(f"[BOT-CRAWLER] Chamando o método 'self.verifica_interrupcao' para lidar com a interrupção no 'crawling' do site.")
+                    self.verifica_interrupcao()
         
         #Retornando dicionario com as paginas HTML
         self.logger.debug("\n[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
         self.logger.info("Captura das páginas terminada!")
         return dict_pagina_html
                         
-    def verifica_bloco_login(self) -> bool:
+    def verifica_interrupcao(self, prompt:str) -> bool:
         
         """
-        Método que verifica se o bloco de 'login' apareceu durante o 'crawling' da página.
-        Caso tenha aparecido, faz o tratamento correto do problema e segue com o 'crawling'.
+        Método que verifica qual tipo de interrupção que ocorreu no fluxo do crawling dentro do 
+        'Pinterest'.
+
+        3 casos especificos são checados:
+
+        1º - Se o prompt não devolveu nenhuma 'pin' de imagem.
+
+        2º - Se o prompt contém alguma palavra 'NSFW'
+
+        3º - Se o bloco de 'login' apareceu, bloqueando o SELENIUM de verificar os 'pins' das imagens.
+
+        Caso nenhum dos 3 casos for averiguado, algo que o PinScrapper.py não consegue lidar esta
+        bloqueando a ação do 'crawler'. Nesse caso o problema é "grave", e precisa da averiguação do
+        desenvolvedor. Nessa situação a exceção 'InvalidSelectorException' é levantada, e um relatório
+        sobre o erro é gerado.
+
+        Args:
+            prompt (str): A string do prompt que esta sendo usado no momento para o 'crawling' de 'pins'.
+        
+        Raises:
+            InvalidSelectorException: Exceção 'levantada' quando nenhum dos 3 casos de interrupção é encontrado.
+
         """
 
         ### Variáveis ###
@@ -131,7 +151,15 @@ class CrawlerPinterest:
         #Botão fechar
         botao_fechar = None
 
+        #Lista que vai verificar elemento de bloqueio relacionado a "nudez" no prompt
+        nude = []
+
+        #Lista que vai verificar elemnto de bloqueio a "nenhuma imagem encontrada"
+        no_img = []
+
         ### Código ###
+
+
 
         try:
             bloco_login = self.driver.find_element(By.XPATH, "div//[@data-test-id='login-modal-default' and @class='ADXRXN']")
