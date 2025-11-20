@@ -7,7 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains as AC
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSelectorException
 
@@ -39,14 +39,16 @@ class CrawlerPinterest:
 
         #TODO - Ainda não foi tratado o problema de um prompt que não possui imagens nele! - Ok! :D
         #TODO - Ainda não foi tratado o prblema de um prompt que insinua nudez ou sexo! - Ok! :D
-        
-        #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver!
-        #BUG -  Crawler verificando mais elementos que apenas os 'pins' de imagem
-        #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
-        #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
         #FIXME - O pinterest no 'lazy_loading', quando tem muita imagens na tela, ele vai apagando as
         #       imagens de tras e adiconando mais a frente. A ideia provavelmente é usar o 'extend' do objeto lista para somar uma nova
-        #       lista de pins capturados a antiga.
+        #       lista de pins capturados a antiga. - Ok! :D
+        #BUG -  Crawler verificando mais elementos que apenas os 'pins' de imagem - Ok! :D
+
+        
+        #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver!
+        #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
+        #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
+        #TODO - Estranha exceção StaleElementReference acontecendo no método verifica_link_pin.
          
         
         ### Variáveis ###
@@ -57,11 +59,14 @@ class CrawlerPinterest:
         #Lista que armazena os links de pins que vao ser salvos no 'dict_lista_link'
         lista_pin_final= []
 
-        #Lista que armazena os links de pins de cada requisição 'find_elements'
+        #Lista que armazena WebElements, mais especificamente tag <a> onde estão os links dos pins
         lista_pin_req = []
 
         #Dicionario que armazena cada pagina HTML com a chave sendo seu respectivo prompt
         dict_lista_link = {}
+
+        #Variávei que mede tentativas de capturar os elementos depois de um StaleElementReference
+        stale_n = 0
         
         ### Código ###
 
@@ -75,6 +80,11 @@ class CrawlerPinterest:
         " 'self.lista_prompt'")
 
         for prompt in self.lista_prompt:
+
+            #Formatando a 'lista_pin_final' e 'stale_n' para uma nova requisição de links dos pins da pagina.
+            lista_pin_final = []
+            stale_n = 0
+
             #Entrando no site e achando o input de pesquisa
             self.logger.info(f"\nComeçando a procurar imagens do prompt => {prompt}")
             self.logger.debug(f"[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
@@ -92,11 +102,17 @@ class CrawlerPinterest:
                 try:
                     
                     #Aqui tentamos pegar todos os links de PIN dos cards da tela
-                    lista_div_img = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@data-test-id='pinWrapper']/a")))
+                    lista_pin_req = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@data-test-id='pinWrapper'] //a")))
+
+                    #Vamos chamar o método 'verifica_link_pin' para adicionar apenas pins diferentes a lista de links final 'lista_pin_final'
+                    self.verifica_link_pin(lista_pin_final,lista_pin_req)
+
+                    #DEBUG
+                    self.logger.debug(f"[BOT-CRAWLER] Valores dentro da 'lista_pin_final' => {lista_pin_final}")
 
                     #Veririfcando se a quantidade bate com a que foi requisitada
-                    if len(lista_div_img) < max_img:
-                        self.logger.info(f"\nAchamos apenas {len(lista_div_img)} imagens para o prompt => {prompt}")
+                    if len(lista_pin_final) < max_img:
+                        self.logger.info(f"\nAchamos apenas {len(lista_pin_final)} imagens para o prompt => {prompt}")
                         self.logger.info("Vamos procurar mais....")
 
                         #DEBUG
@@ -107,13 +123,14 @@ class CrawlerPinterest:
                     
                     else:
                         #Salvando o HTML estatico no dicionario 'dict_pagina_html' tendo a chave como prompt
-                        self.logger.debug(f"\n[BOT-CRAWLER] Achamos {len(lista_div_img)} imagens da requisição de {max_img} imagens.")
-                        self.logger.info(f"Achamos todas as imagens! Salvando a pagina do prompt => {prompt}")
-                        dict_lista_link[prompt] = self.driver.page_source
+                        self.logger.debug(f"\n[BOT-CRAWLER] Achamos {len(lista_pin_final)} imagens da requisição de {max_img} imagens.")
+                        self.logger.info(f"Achamos todas as imagens! Salvando os links das imagens do prompt => {prompt}")
+                        
+                        #Fazemos o slice da lista, limitando o numero de elementos a quantidade que o usuário pediu
+                        dict_lista_link[prompt] = lista_pin_final[0:max_img]
                         break
                 
                 except TimeoutException as error:
-                    #TODO Modificar essa parte para tratar os dois bugs de "Não encontrado imagens"
                     #Tratando o problema do bloco de login "congelando" a página
                     self.logger.debug(f"\n[BOT-CRAWLER] Exceção 'TimeoutException' levantada com o prompt => {prompt}")
                     self.logger.info(f"Alguma interrupção aconteceu no prompt => {prompt}")
@@ -126,13 +143,25 @@ class CrawlerPinterest:
                     #Quebramos o ciclo 'while' e seguimos para o próximo prompt.
                     if not self.verifica_interrupcao(prompt):
                         break
+                
+                except StaleElementReferenceException as error:
+                    stale_n += 1
+                    self.logger.debug("[BOT-CRAWLER] Exceção 'StaleElementReference' foi levantada. Tentando realizar a captura novamente dos elementos.")
+                    self.logger.debug(f"[BOT-CRAWLER] {stale_n}ª Tentativa de capturar novamente os links dos pins...")
+                    if stale_n != 3:
+                        continue
+                    else:
+                        self.logger.debug("Quantidade maxima de tentativas de encontrar os elementos alcançada! Encerrando o programa!")
+                        #Saindo para fora do método 'bot_crawler' para a exceção ser registrada!
+                        raise
+
         
         #Retornando dicionario com as paginas HTML
         self.logger.debug("\n[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
         self.logger.info("Captura das páginas terminada!")
         return dict_lista_link
     
-    def verifica_pin(self, lista_pin_final:list[str], lista_pin_req:list[str]) -> None:
+    def verifica_link_pin(self, lista_pin_final:list[str], lista_pin_req:list[WebElement]) -> None:
 
         """
         Método utilizado para verificar quais os links de 'pins' da listad de requisição 'lista_pins_req'
@@ -162,13 +191,20 @@ class CrawlerPinterest:
         
         """
         
+        ### Variáveis ###
+
+        #Variável que extrai o link do WebElement da 'lista_pin_req'
+        link = ""
+
+        ### Código ###
+
         #Vamor iterar cada item da lista final para comparar com a nova requisição
         for link_r in lista_pin_req:
-            if not link_r in lista_pin_final:
-                lista_pin_final.append(link_r)
+            #Retirando link em formato string
+            link = link_r.get_attribute('href')
+            if not link in lista_pin_final:
+                lista_pin_final.append(link)
           
-
-                        
     def verifica_interrupcao(self, prompt:str) -> bool:
         
         """
@@ -242,9 +278,9 @@ class CrawlerPinterest:
         
         #Caso não for problemas com o prompt fornecido, verificamos se o bloco de 'login' de bloqueando o acesso do crawler ao site
         try:
-            bloco_login = self.driver.find_element(By.XPATH, "div//[@data-test-id='login-modal-default' and @class='ADXRXN']")
+            bloco_login = self.driver.find_element(By.XPATH, "//div[@data-test-id='login-modal-default' and @class='ADXRXN']")
             if bloco_login:
-                botao_fechar = bloco_login.find_element(By.XPATH,"button//[@aria-label='fechar']")
+                botao_fechar = bloco_login.find_element(By.XPATH,"//button[@aria-label='fechar']")
                 botao_fechar.click()
                 return True
         
@@ -275,7 +311,7 @@ def main():
     crawler.driver.quit()
 
     #Verificando páginas capturadas em arquivo
-    salva_html(dict_html)
+    #salva_html(dict_html)
 
 
 if __name__ == "__main__":
