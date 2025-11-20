@@ -9,29 +9,26 @@ Função: configurando_logger()
 
 => Função que retorna uma instancia da classe Logger configurada, do módulo logging.
 
-Essa instancia é utilizada para realizar todos os logs de informação para o usuário, 
-logs de depuração e logs em arquivo de possiveis exceções.que possam ocorrer durante 
-a utilização do programa.
+Função: mock_parser()
 
+=> Função 'Mock' que emula um "Parser" para testar o método 'bot_crawler'.
+
+Função: salva_html()
+
+=> Função que recebe um dicionario contendo paginas HTML, e salva elas em um arquivo texto.
+
+Função: salva_links_pin()
+
+=> Função que recebe um dicionario contendo listas com links de 'pin' do Pinterest, e salva eles
+   em arquivo texto.
 
 Classe: MaxFilter(logging.Filter)
 
 => Classe que cria um filtro para uma instancia "StreamHandler".
 
-Essa classe é utilizada para criar um filtro para um dos handlers da instancia do Logger
-criada pela função "configurando_logger". No caso, ela faz com que o "StreamHandler" armazenado
-na variável "user_handler" do "Logger" não retorne mensangens de level "ERROR" para o console, e 
-faça elas apenas aparecerem em um arquivo ".log".
-
-
 Classe: DebugFilter(logging.Filter)
 
 => Classe que cria um filtro para uma instancia "StreamHandler".
-
-Essa classe é utilizada para criar um filtro para um dos handlers da instancia do Logger
-criada pela função "configurando_logger". No caso, ela adiciona um filtro a instancia "StreamHandler"
-armazenada na variável "debug_handler", onde esse filtro apenas permite mensagens de nivel DEBUG
-aparecerem no console.
 
 """
 
@@ -194,6 +191,42 @@ def salva_html(dict_html:dict[str:str]):
         with open(f"{p}/{prompt}.txt", "w", encoding="UTF-8") as arq:
             arq.write(pagina)
 
+
+def salva_links_pin(dict_links:dict[str,list[str]]) -> None:
+
+    """
+    Função que recebe um dicionário contendo um lista com links de 'pins' do Pinterest e salva eles
+    em um arquivo texto.
+
+    Args:
+        dict_links (dict[str,list[str]]): Dicionário contendo listas com links dos pins do Pinterest, tendo
+                                          como chave, os prompts que as geraram.
+    
+    """
+
+    ### Variáveis ###
+
+    #Instancia da classe Path
+    path = None
+
+    #Tempo atual da execução da função
+    tempo = ""
+
+    ### Código ###
+
+    #Capturando o valor do tempo atual
+    tempo = time.strftime(fr"%d %m %Y - %H %M %Y",time.localtime())
+
+    #Iniciando a instancia Path e criando o diretório
+    path = Path(".") / f"Links Pinterest {tempo}"
+    path.mkdir(exist_ok=True)
+
+    #Iterando listas contendo os links e salvando em arquivo '.txt'
+    for prompt,lista in dict_links.items():
+        with open(f"{path}/{prompt}.txt","w",encoding="UTF-8") as arq:
+            for link in lista:
+                arq.write(link)
+    
 
 #Classes
 
