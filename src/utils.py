@@ -201,7 +201,6 @@ def salva_links_pin(dict_links:dict[str,list[str]]) -> None:
     Args:
         dict_links (dict[str,list[str]]): Dicionário contendo listas com links dos pins do Pinterest, tendo
                                           como chave, os prompts que as geraram.
-    
     """
 
     ### Variáveis ###
@@ -226,6 +225,7 @@ def salva_links_pin(dict_links:dict[str,list[str]]) -> None:
         with open(f"{path}/{prompt}.txt","w",encoding="UTF-8") as arq:
             for link in lista:
                 arq.write(link)
+                arq.write("\n")
     
 
 #Classes
@@ -261,6 +261,11 @@ def main():
     logger = configurando_logger(debug_mode=True)
     logger.info("Mostrando mensagem ao usuário!")
     logger.debug("Mostrando mensagem ao desenvolvedor!")
+
+
+    #Testando a função 'salva_links_pin'
+    dict_links = {"prompt1":["1 Link1","1 Link2","1 Link3"],"prompt2":["2 Link1","2 Link2","2 Link3"],"prompt3":["3 Link1","3 Link2","3 Link3"]}
+    salva_links_pin(dict_links)
 
 
 if __name__ == "__main__":
