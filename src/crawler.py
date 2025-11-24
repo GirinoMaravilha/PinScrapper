@@ -309,9 +309,15 @@ def main():
     driver = webdriver.Chrome()
     dict_links = {}
 
-    crawler = CrawlerPinterest(driver,logger,mock_lista_prompt)
-    dict_links = crawler.bot_crawler()
-    crawler.driver.quit()
+    try:
+        crawler = CrawlerPinterest(driver,logger,mock_lista_prompt)
+        dict_links = crawler.bot_crawler()
+    
+    except Exception as error:
+        logger.error("Uma Exceção foi levantada! Verifique o relatório 'Error.log' para mais informações.")
+    
+    finally:
+        crawler.driver.quit()
 
     #Verificando páginas capturadas em arquivo
     salva_links_pin(dict_links)

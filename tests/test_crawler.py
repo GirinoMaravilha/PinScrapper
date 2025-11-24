@@ -28,6 +28,68 @@ class MockCrawlerPinterest:
     def __init__(self, driver:WebDriver):
         
         self.driver = driver
+ 
+    def test_bot_crawler_stale_exception(self):
+
+        #TODO Não esta funcionando!
+        #Não realiza testes de tratamento do StaleElementReference!
+
+        """
+        Método teste para verificar se parte do código do método orginal consegue lidar com exceções
+        'StaleElementReferenceException'.
+        """
+
+        ### Variáveis ###
+
+        #Variável que armazena o numero de tentativas de captura do elemento
+        stale_n = 0
+
+        #Código HTML contendo o Javscript que modifica a DOM uma vez
+        html = """
+        <div class="pin">Original</div>
+
+        <script>
+        requestAnimationFrame(() => {
+            const original = document.querySelector('.pin');
+            original.remove();
+
+            requestAnimationFrame(() => {
+                const novo = document.createElement('div');
+                novo.className = 'pin';
+                novo.textContent = 'Novo elemento';
+                document.body.appendChild(novo);
+            });
+        });
+        </script>
+        """
+
+        #Variável que armazena elemento coletado
+        pin = None
+
+        ### Código ###
+
+        self.driver.get(f"data:text/html," + html)
+        time.sleep(10)
+        while True:
+            #Aqui emulamos a tentativa de capturar um PIN
+            try:
+                pin = self.driver.find_element(By.CSS_SELECTOR,".pin")
+                print(f"Retornando texto do elemento coletado => {pin.text}")
+                #Caso conseguirmos capturar o elemento, quebramos o ciclo e encerramos o método
+                break
+
+            #Caso a exceção seja levantada, tentamos de novo até esgotar as tentivas
+            except StaleElementReferenceException as error:
+                stale_n += 1
+
+                if stale_n < 3:
+                    print(f"\nExceção StaleElementeReferenceException levantada! Tentando capturar o elemento novamente!")
+                    time.sleep(2)
+
+                else:
+                    print(f"Número máximo de tentativas alcançado! Realizando limpeza e levantando exceção!")
+                    self.driver.quit()
+                    raise StaleElementReferenceException
 
     def test_verifica_interrupcao(self,lista_prompt:list[str]) -> None:
         
@@ -77,7 +139,8 @@ def main():
     
 
     mockc = MockCrawlerPinterest(driver)
-    mockc.test_verifica_interrupcao(lista_prompt)
+    #mockc.test_verifica_interrupcao(lista_prompt)
+    mockc.test_bot_crawler_stale_exception()
     mockc.driver.quit()
 
 
