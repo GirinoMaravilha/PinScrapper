@@ -10,6 +10,8 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSelectorException
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import WebDriverException
 
 import logging
 from utils import configurando_logger
@@ -43,15 +45,16 @@ class CrawlerPinterest:
         #       imagens de tras e adiconando mais a frente. A ideia provavelmente é usar o 'extend' do objeto lista para somar uma nova
         #       lista de pins capturados a antiga. - Ok! :D
         #BUG -  Crawler verificando mais elementos que apenas os 'pins' de imagem - Ok! :D
+        #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
+        #       RES => Fazer um mock para testar separadamente, como a parte do metodo 'verifica_interrupcao'
+        #              lida com o bloco de login. - Ok! :D
+        #TODO - Estranha exceção StaleElementReference acontecendo no método verifica_link_pin.
+        #       RES => Fazer um mock com o tratamento da exceção para simular uma situaçao real. - Ok! :D
 
         
         #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver!
         #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
-        #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
-        #       RES => Fazer um mock para testar separadamente, como a parte do metodo 'verifica_interrupcao'
-        #              lida com o bloco de login.
-        #TODO - Estranha exceção StaleElementReference acontecendo no método verifica_link_pin.
-        #       RES => Fazer um mock com o tratamento da exceção para simular uma situaçao real.
+       
          
         
         ### Variáveis ###
@@ -70,6 +73,9 @@ class CrawlerPinterest:
 
         #Variávei que mede tentativas de capturar os elementos depois de um StaleElementReference
         stale_n = 0
+
+        #Variável que mede tentativas de realizar a requisição ao servidor do site Pinterest
+        request_n = 0
         
         ### Código ###
 
@@ -92,8 +98,25 @@ class CrawlerPinterest:
             self.logger.info(f"\nComeçando a procurar imagens do prompt => {prompt}")
             self.logger.debug(f"[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
 
-            self.driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
+            #Aqui iniciamos um bloco try para tentar reconexões caso a primeira requisição falhe
+            while True:
+                try:
+                    self.logger.debug(f"\n[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
+                    self.logger.info(f"Realizando a requisição para o o Pinterest com o prompt => {prompt}")
 
+                    self.driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
+                    break
+                
+                except WebDriverException as error:
+                    request_n += 1
+                    if request_n != 3:
+                        self.logger.debug(f"[BOT-CRAWLER] {request_n}ª de 3 tentativas de requisição falhou! Tentando mais uma vez...")
+                        continue
+                    else:
+                        #Subindo o método para fora do 'bot_crawler' para a exceção ser tratada
+                        self.logger.debug(f"[BOT-CRAWLER] Limite de tentativas alcançado! Fazendo limpe-za e encerrando o programa!")
+                        raise
+                    
             #DEBUG
             time.sleep(4)
 
@@ -287,7 +310,7 @@ class CrawlerPinterest:
                 botao_fechar.click()
                 return True
         
-        except InvalidSelectorException as error:
+        except (InvalidSelectorException,NoSuchElementException) as error:
 
             #Problema grave. Algo esta interrompendo o fluxo e que o PinScrapper não consegue lidar
             #Fazendo limpeza e encerrando programa
@@ -305,7 +328,7 @@ def main():
 
     #Testando instancia do CrawlerImagens na captura de páginas HTML
     mock_lista_prompt = ["Lucy Heartfilia","Android 18", "Nami","Digimon 1 Mimi adult","Princess Zelda"] 
-    logger = configurando_logger(debug_mode=True)
+    logger = configurando_logger(debug_mode=False)
     driver = webdriver.Chrome()
     dict_links = {}
 
@@ -314,7 +337,8 @@ def main():
         dict_links = crawler.bot_crawler()
     
     except Exception as error:
-        logger.error("Uma Exceção foi levantada! Verifique o relatório 'Error.log' para mais informações.")
+        logger.info("Uma Exceção foi levantada! Verifique o relatório 'Error.log' para mais informações.")
+        logger.error(f"Exceção => {error}\n\nnTraceback => {print_exc()}")
     
     finally:
         crawler.driver.quit()
