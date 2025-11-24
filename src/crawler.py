@@ -50,9 +50,8 @@ class CrawlerPinterest:
         #              lida com o bloco de login. - Ok! :D
         #TODO - Estranha exceção StaleElementReference acontecendo no método verifica_link_pin.
         #       RES => Fazer um mock com o tratamento da exceção para simular uma situaçao real. - Ok! :D
+        #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver! - Ok! :D
 
-        
-        #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver!
         #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
        
          
