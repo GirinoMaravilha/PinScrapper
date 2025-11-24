@@ -13,7 +13,7 @@ from selenium.common.exceptions import InvalidSelectorException
 
 import logging
 from utils import configurando_logger
-from utils import salva_html
+from utils import salva_links_pin
 import time
 from traceback import print_exc
 
@@ -48,7 +48,10 @@ class CrawlerPinterest:
         #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver!
         #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
         #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
+        #       RES => Fazer um mock para testar separadamente, como a parte do metodo 'verifica_interrupcao'
+        #              lida com o bloco de login.
         #TODO - Estranha exceção StaleElementReference acontecendo no método verifica_link_pin.
+        #       RES => Fazer um mock com o tratamento da exceção para simular uma situaçao real.
          
         
         ### Variáveis ###
@@ -304,14 +307,14 @@ def main():
     mock_lista_prompt = ["Lucy Heartfilia","Android 18", "Nami","Digimon 1 Mimi adult","Princess Zelda"] 
     logger = configurando_logger(debug_mode=True)
     driver = webdriver.Chrome()
-    dict_html = {}
+    dict_links = {}
 
     crawler = CrawlerPinterest(driver,logger,mock_lista_prompt)
-    dict_html = crawler.bot_crawler()
+    dict_links = crawler.bot_crawler()
     crawler.driver.quit()
 
     #Verificando páginas capturadas em arquivo
-    #salva_html(dict_html)
+    salva_links_pin(dict_links)
 
 
 if __name__ == "__main__":
