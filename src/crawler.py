@@ -48,10 +48,54 @@ from utils import configurando_logger
 from utils import salva_links_pin
 import time
 from traceback import format_exc
+from abc import ABC,abstractmethod
 
-#Classes
 
-class CrawlerPinterest:
+#Classe Abstrata
+class Crawler(ABC):
+
+    """
+    Classe base abstrata para crawlers de diferentes sites.
+
+    Esta classe define a interface mínima que todo crawler deve implementar,
+    garantindo um comportamento consistente entre diversas plataformas.
+    Subclasses devem sobrescrever os métodos abstratos para fornecer a
+    lógica específica de cada site.
+    """
+
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def bot_crawler(self):
+
+        """
+        Executa o processo principal de crawling.
+
+        Retorna os dados extraídos do site, como links, metadados ou objetos
+        estruturados, dependendo da implementação da subclasse.
+
+        """
+
+        pass
+
+
+#Sub-Classes
+
+class CrawlerPinterest(Crawler):
+
+    """
+    Implementação do crawler para o site Pinterest.
+
+    Esta classe executa buscas com base em prompts definidos pelo usuário, coleta links de pins 
+    encontrados e retorna os resultados organizados em um dicionário.
+
+    Atributos:
+        driver (WebDriver): Navegador controlado pelo Selenium.
+        logger (Logger): Logger usado para registrar mensagens e exceções.
+        lista_prompt (list[str]): Lista de termos de busca que vão ser uutilizados no Pinterest.
+    """
 
     def __init__(self,driver:WebDriver,logger:logging.Logger,lista_prompt:list[str]):
 
@@ -67,7 +111,35 @@ class CrawlerPinterest:
     def driver(self, valor):
         raise AttributeError("O atributo self._driver não pode ter seu valor modificado diretamente!")
 
-    def bot_crawler(self,max_img:int=10) -> dict[str:str]:
+    def bot_crawler(self,max_img:int=10) -> dict[str:list]:
+
+        """
+        Método que executa o 'crawling' pelo site do Pinterest.
+
+        O 'bot_crawler' ira interagir com o site do Pinterest, enviando os prompts fornecidos
+        pelo usuário, e esperando o retorno dos resultados da pesquisa.
+
+        Dessa forma, ele vai "rolando" a página para baixo, fazendo com que o javascript va revelando
+        novos pins de imagens referentes ao prompt, sendo que o link de cada um é coletado e armazenado
+        em uma lista que por fim sera armazenada em um dicionário, tendo como chave dela, o prompt que a gerou.
+
+        Args:
+            max_img(int): Número máximo de imagens que o usuário quer que o crawler colete.
+        
+        Returns:
+            dict(list): Dicionário que armazena listas contendo os links de cada pin coletado de 
+                        um respectivo prompt. Prompt este que entra como chave da lista coletada.
+        
+        Raises:
+            WebDriverException: Exceção levantada caso a conexão falhe durante a requisição da página ao servidor.
+            
+            TimeoutException: Exceção levantada quando demora demais para realizar a captura de elementos contendo
+                              os links de pin da página.
+            
+            StaleElementReferenceException: Exceção levantada quando, ao tentar capturar os WebElements contendos os pins
+                                            o elementos fica na condição de 'Stale' ou seja, ele existia, porem na hora da captura
+                                            foi modificado, e não existe mais.
+        """
         
         ### Variáveis ###
 
@@ -80,7 +152,7 @@ class CrawlerPinterest:
         #Lista que armazena WebElements, mais especificamente tag <a> onde estão os links dos pins
         lista_pin_req = []
 
-        #Dicionario que armazena cada pagina HTML com a chave sendo seu respectivo prompt
+        #Dicionario que armazena listas de links dos pins com a chave sendo seu respectivo prompt
         dict_lista_link = {}
 
         #Variávei que mede tentativas de capturar os elementos depois de um StaleElementReference
