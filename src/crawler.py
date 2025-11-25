@@ -102,6 +102,13 @@ class CrawlerPinterest(Crawler):
         self._driver = driver
         self.lista_prompt = lista_prompt
         self.logger = logger
+
+        #Verificando se a lista passada pelo usuário contem algum valor, se nao tiver, levanta uma exceção
+        self.logger.debug(f"\n[BOT-CRAWLER] Verificando se o valor passado para o atributo 'logger' não é vazio. ")
+        if not self.lista_prompt:
+            self.logger.debug("[BOT-CRAWLER] A lista fornecida pelo usuário esta em branco. Levantando exceção e encerrando o programa.")
+            self.logger.info("\nNão existe nenhum prompt na lista fornecida!")
+            raise ValueError ("\nO valor do argumento 'lista_prompt' não pode ser vazio!")
         
     @property
     def driver(self):
@@ -109,7 +116,7 @@ class CrawlerPinterest(Crawler):
     
     @driver.setter
     def driver(self, valor):
-        raise AttributeError("O atributo self._driver não pode ter seu valor modificado diretamente!")
+        raise AttributeError("\nO atributo self._driver não pode ter seu valor modificado diretamente!")
 
     def bot_crawler(self,max_img:int=10) -> dict[str:list]:
 
@@ -456,15 +463,25 @@ class CrawlerPinterest(Crawler):
 
 def main():
 
+    ### Variáveis ###
+
     #Testando instancia do CrawlerImagens na captura de páginas HTML
     mock_lista_prompt = ["Lucy Heartfilia","Android 18", "Nami","Digimon 1 Mimi adult","Princess Zelda"] 
+    mock_lista_prompt_vazia = []
     logger = configurando_logger(debug_mode=False)
     driver = webdriver.Chrome()
     dict_links = {}
+    c = None
+
+    ### Código ###
 
     try:
-        crawler = CrawlerPinterest(driver,logger,mock_lista_prompt)
-        dict_links = crawler.bot_crawler()
+        #Crawler com lista normal
+        c = CrawlerPinterest(driver,logger,mock_lista_prompt)
+
+        #Crawler com lista vazia
+        #c = CrawlerPinterest(driver,logger,mock_lista_prompt_vazia)
+        dict_links = c.bot_crawler()
 
         #Verificando páginas capturadas em arquivo
         salva_links_pin(dict_links)
@@ -474,8 +491,13 @@ def main():
         print("\n\n")
         logger.error(f"Exceção => {error}\n\nTraceback => {format_exc()}")
     
+    except KeyboardInterrupt as error:
+        logger.info("\nInterrupção pelo teclado detectada!")
+        logger.info("\nEncerrando o programa....")
+    
     finally:
-        crawler.driver.quit()
+        if isinstance(c,CrawlerPinterest):
+            c.driver.quit()
 
 
 if __name__ == "__main__":
