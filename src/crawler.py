@@ -17,7 +17,7 @@ import logging
 from utils import configurando_logger
 from utils import salva_links_pin
 import time
-from traceback import print_exc
+from traceback import format_exc
 
 #Classes
 
@@ -38,23 +38,6 @@ class CrawlerPinterest:
         raise AttributeError("O atributo self._driver não pode ter seu valor modificado diretamente!")
 
     def bot_crawler(self,max_img:int=10) -> dict[str:str]:
-
-        #TODO - Ainda não foi tratado o problema de um prompt que não possui imagens nele! - Ok! :D
-        #TODO - Ainda não foi tratado o prblema de um prompt que insinua nudez ou sexo! - Ok! :D
-        #FIXME - O pinterest no 'lazy_loading', quando tem muita imagens na tela, ele vai apagando as
-        #       imagens de tras e adiconando mais a frente. A ideia provavelmente é usar o 'extend' do objeto lista para somar uma nova
-        #       lista de pins capturados a antiga. - Ok! :D
-        #BUG -  Crawler verificando mais elementos que apenas os 'pins' de imagem - Ok! :D
-        #TODO - Temos que testar como o programa lida com bloco de 'login' interrompendo o fluxo.
-        #       RES => Fazer um mock para testar separadamente, como a parte do metodo 'verifica_interrupcao'
-        #              lida com o bloco de login. - Ok! :D
-        #TODO - Estranha exceção StaleElementReference acontecendo no método verifica_link_pin.
-        #       RES => Fazer um mock com o tratamento da exceção para simular uma situaçao real. - Ok! :D
-        #TODO - Lidar com a falha na comexão ao servidor pelo método 'get' do driver! - Ok! :D
-
-        #FIXME - Resolver problema caso o usuário pessa muitas imagens, alem dos que existem no retorno do pinterest.
-       
-         
         
         ### Variáveis ###
 
@@ -110,10 +93,12 @@ class CrawlerPinterest:
                     request_n += 1
                     if request_n != 3:
                         self.logger.debug(f"[BOT-CRAWLER] {request_n}ª de 3 tentativas de requisição falhou! Tentando mais uma vez...")
+                        self.logger.info(f"{request_n}ª de 3 tentativas - Ocorreu um problema ao tentar conexão com o site do Pinterest.... Vamos tentar mais uma vez!")
                         continue
                     else:
                         #Subindo o método para fora do 'bot_crawler' para a exceção ser tratada
-                        self.logger.debug(f"[BOT-CRAWLER] Limite de tentativas alcançado! Fazendo limpe-za e encerrando o programa!")
+                        self.logger.debug(f"[BOT-CRAWLER] Limite de tentativas alcançado! Fazendo limpeza e encerrando o programa!")
+                        self.logger.info("Limite de tentativas alcançado! Problema com a conexão!")
                         raise
                     
             #DEBUG
@@ -143,10 +128,14 @@ class CrawlerPinterest:
                         #DEBUG
                         time.sleep(4)
                         
-
-                        #TODO Método 'verifica_chegou_no_fim' entra aqui
-                        #Vamos "rolar" a tela para baixo e tentar fazer o javascript revelar mais imagens
-                        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        #Vamos realizar o rolamento, e ao mesmo tempo, verificar se a página chegou ao fim.
+                        if self.verifica_chegou_no_fim():
+                            self.logger.debug(f"\n[BOT-CRAWLER] A página chegou ao fim com o prompt {prompt}. Armazenando as imagens do dicionario, encerrando as iterações e seguindo para o próximo prompt.")
+                            self.logger.info(f"A página do prompt => {prompt} chegou ao fim! Vamos entao encerrar a captura com {len(lista_pin_final)} imagens!")
+                            
+                            #Armazenando as imagens do dicionario independente de terem chegado ao max_img definido pelo usuário, e encerrando a iteração
+                            dict_lista_link[prompt] = lista_pin_final[0:max_img]
+                            break
                     
                     else:
                         #Salvando o HTML estatico no dicionario 'dict_pagina_html' tendo a chave como prompt
@@ -315,13 +304,13 @@ class CrawlerPinterest:
         except (InvalidSelectorException,NoSuchElementException) as error:
 
             #Problema grave. Algo esta interrompendo o fluxo e que o PinScrapper não consegue lidar
-            #Fazendo limpeza e encerrando programa
+            #Fazendo limpeza e levantando exceção para sair do método e a mesma ser tratada fora.
             self.driver.quit()
 
             self.logger.info("Bloco Login e textos não encontrados! Erro grave no programa! De uma olhada no log de erro 'Error.log'!")
-            self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados. Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens. => {error}\n{print_exc()}")
+            self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados. Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens.")
             
-            raise InvalidSelectorException
+            raise 
     
     def verifica_chegou_no_fim(self) -> bool:
 
@@ -374,16 +363,17 @@ def main():
     try:
         crawler = CrawlerPinterest(driver,logger,mock_lista_prompt)
         dict_links = crawler.bot_crawler()
+
+        #Verificando páginas capturadas em arquivo
+        salva_links_pin(dict_links)
     
     except Exception as error:
         logger.info("Uma Exceção foi levantada! Verifique o relatório 'Error.log' para mais informações.")
-        logger.error(f"Exceção => {error}\n\nnTraceback => {print_exc()}")
+        print("\n\n")
+        logger.error(f"Exceção => {error}\n\nTraceback => {format_exc()}")
     
     finally:
         crawler.driver.quit()
-
-    #Verificando páginas capturadas em arquivo
-    salva_links_pin(dict_links)
 
 
 if __name__ == "__main__":
