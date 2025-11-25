@@ -1,3 +1,33 @@
+"""
+Módulo responsável por disponibilizar crawlers para diferentes sites.
+
+Atualmente, este módulo fornece a classe `CrawlerPinterest`, que implementa
+as funcionalidades necessárias para realizar o crawling no site do Pinterest,
+coletando links de pins a partir de uma lista de prompts fornecida pelo usuário.
+
+Dependências:
+    - selenium
+    - utils.py (módulo interno desta aplicação)
+
+Exemplo:
+    from src.crawler import CrawlerPinterest
+    from src.utils import salva_links_pin, configurando_logger
+    from selenium import webdriver
+
+    lista_prompts = ["Lucy Heartfilia", "Android 18", "Nami", "Mimi Digimon", "Princess Zelda"]
+    logger = configurando_logger(debug_mode=False)
+    driver = webdriver.Chrome()
+
+    crawler = CrawlerPinterest(driver, logger, lista_prompts)
+    dict_links = crawler.bot_crawler()
+
+    salva_links_pin(dict_links)
+
+Notas:
+    Este módulo não deve ser executado diretamente, utilize ele apenas via 'import'.
+"""
+
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
