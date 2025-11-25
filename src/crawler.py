@@ -143,6 +143,8 @@ class CrawlerPinterest:
                         #DEBUG
                         time.sleep(4)
                         
+
+                        #TODO Método 'verifica_chegou_no_fim' entra aqui
                         #Vamos "rolar" a tela para baixo e tentar fazer o javascript revelar mais imagens
                         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                     
@@ -210,9 +212,10 @@ class CrawlerPinterest:
         ele é adicionado a ela.
 
         Args:
-            lista_pin_final (list[str]): Lista contendo todos os links ja salvos e filtrados.
+            lista_pin_final (list[str]): Lista contendo todos os links ja salvos e filtrados. Corresponde ao mesmo local
+                                         de memória da lista em 'bot_crawler'.
 
-            lista_pin_req(list[str]): Lista contendo os links da ultima requisição que precisam ser filtrados.
+            lista_pin_req(list[WebElement]): Lista contendo os links da ultima requisição que precisam ser filtrados.
         
         """
         
@@ -319,7 +322,44 @@ class CrawlerPinterest:
             self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados. Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens. => {error}\n{print_exc()}")
             
             raise InvalidSelectorException
-        
+    
+    def verifica_chegou_no_fim(self) -> bool:
+
+        """
+        Método para verificar se a página com os pins chegou no seu rodapé, indicando que não
+        existe mais pins para retirar links.
+
+        Para realizar essa verificação, capturamos o eixo Y da DOM atual, realizamos o rolamento
+        e depois capturamos novamente o eixo Y para comparar com o primeiro. Se der diferente, o valor
+        retornado sera 'False', indicando que ainda existe imagens mais abaixo. Caso seja 'True', indica
+        que a página chegou ao fim, não tem mais nada.
+
+        Returns:
+            bool: Retorna um booleano indicando se a página chegou ao fim ou não.
+        """
+
+        ### Variáveis ###
+
+        #Medida do eixo Y antes do "rolamento"
+        scroll_anterior = 0
+
+        #Medida do eixo Y depois do "rolamento"
+        scroll_atual = 0
+
+        ### Código ###
+
+        #Capturando eixo Y antes do rolamento
+        scroll_anterior = self.driver.execute_script("return window.pageYOffset;")
+
+        #Vamos "rolar" a tela para baixo e tentar fazer o javascript revelar mais imagens
+        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+        #Capturando o eixo Y atual
+        scroll_atual = self.driver.execute_script("return window.pageYOffset;")
+
+        #Retornando booleana da comparação entre as duas
+        return scroll_anterior == scroll_atual
+
 
 #Função Main para DEBUG
 
