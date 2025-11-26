@@ -90,6 +90,12 @@ def test_verifica_interrupcao_imagem_nao_retornada(driver:WebDriver):
 
     #Iniciando a iteração dos prompts
     for prompt in lista_prompt:
+        
+        #Reiniciando as variaveis para sempre verificarmos a captura
+        no_img = None
+        nsfw = None
+
+        #Capturando textos de erro para verificação
         driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
         no_img = driver.find_elements(By.XPATH,"//div[text()='Não foi possível encontrar Pins para esta pesquisa.']")
         nsfw = driver.find_elements(By.XPATH,"//span[text()='Pins sobre esse interesse costumam violar as ' or text()='Nudez é permitida no Pinterest, mas com ressalvas. Certifique-se de que entendeu ']")
