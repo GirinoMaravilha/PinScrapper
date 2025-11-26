@@ -73,6 +73,31 @@ def test_verifica_interrupcao_bloco_login(driver:WebDriver) -> None:
         driver.quit()
 
 
+def test_verifica_interrupcao_imagem_nao_retornada(driver:WebDriver):
+    
+    ### variáveis ###
+
+    #Lista de prompts para gerar os dois erros
+    lista_prompt = ["Nami One piece blowjob","japanese sex","Mimi digimon 1 adult hot"]
+
+    #Texto do erro de nao ter retornado imagens
+    no_img = None
+
+    #Texto de erro quando o prompt insunua conteudo NSFW
+    nsfw = None
+
+    ### Código ###
+
+    #Iniciando a iteração dos prompts
+    for prompt in lista_prompt:
+        driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
+        no_img = driver.find_elements(By.XPATH,"//div[text()='Não foi possível encontrar Pins para esta pesquisa.']")
+        nsfw = driver.find_elements(By.XPATH,"//span[text()='Pins sobre esse interesse costumam violar as ' or text()='Nudez é permitida no Pinterest, mas com ressalvas. Certifique-se de que entendeu ']")
+        assert no_img or nsfw
+    
+    driver.quit()
+
+
 def test_verifica_captura_pins(driver:WebDriver) -> None:
 
     ### Variáveis ###
