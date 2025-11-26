@@ -1,16 +1,16 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support.ui import WebDriverWait
 import pytest
+import time
 
 
-@pytest.fixture(params=["chrome","firefox"])
+@pytest.fixture()
 def driver(request):
 
     ### Variáveis ###
-
-    #Um dos parametros da fixture
-    param = ""
 
     #Instancia WebDriver
     d = None
@@ -20,26 +20,16 @@ def driver(request):
 
     ### Código ###
 
-    #Retirando um dos parametros do decorador da fixture
-    param = request.param
-    
-    #Comparando valores para definir o driver correro do teste
-    if param == "chrome":
-        options = ChromeOptions()
-        options.add_argument("--headless")
-        d = webdriver.Chrome(options=options)
-    
-    else:
-        options = FirefoxOptions()
-        options.add_argument("--headless")
-        d = webdriver.Firefox()
+    #Realizando configuração do chrome
+    options = ChromeOptions()
+    #options.add_argument("--headless")
+    d = webdriver.Chrome(options=options)
     
     #Retornando driver configurado para os workers
     yield d
 
     #Fazendo limpeza e encerrando o programa
     d.quit()
-
 
 
 

@@ -466,7 +466,7 @@ def main():
     ### Variáveis ###
 
     #Testando instancia do CrawlerImagens na captura de páginas HTML
-    mock_lista_prompt = ["Lucy Heartfilia","Android 18", "Nami","Digimon 1 Mimi adult","Princess Zelda"] 
+    mock_lista_prompt = ["Nami One piece blowjob"] 
     mock_lista_prompt_vazia = []
     logger = configurando_logger(debug_mode=False)
     driver = webdriver.Chrome()

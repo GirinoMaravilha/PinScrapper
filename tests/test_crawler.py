@@ -24,6 +24,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 import time
 
 
+
 #Testes
 
 def test_testando_url_pinterest(driver:WebDriver) -> None:
@@ -56,7 +57,7 @@ def test_verifica_interrupcao_bloco_login(driver:WebDriver) -> None:
     #Forçando o bloco de login a aparecer fazendo varias requisições
     for prompt in lista_prompt:
         driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
-        time.sleep(2)
+        time.sleep(5)
 
     #Tentando encontrar o bloco de login 
     bloco_login = driver.find_elements(By.XPATH, "//div[@data-test-id='login-modal-default' and @class='ADXRXN']")
@@ -90,13 +91,10 @@ def test_verifica_interrupcao_imagem_nao_retornada(driver:WebDriver):
 
     #Iniciando a iteração dos prompts
     for prompt in lista_prompt:
-        
-        #Reiniciando as variaveis para sempre verificarmos a captura
-        no_img = None
-        nsfw = None
 
         #Capturando textos de erro para verificação
         driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
+        time.sleep(5)
         no_img = driver.find_elements(By.XPATH,"//div[text()='Não foi possível encontrar Pins para esta pesquisa.']")
         nsfw = driver.find_elements(By.XPATH,"//span[text()='Pins sobre esse interesse costumam violar as ' or text()='Nudez é permitida no Pinterest, mas com ressalvas. Certifique-se de que entendeu ']")
         assert no_img or nsfw
@@ -127,7 +125,7 @@ def test_verifica_captura_pins(driver:WebDriver) -> None:
     assert "Pinterest" in driver.title
 
     while True:
-        lista_pins = wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@data-test-id='pinWrapper'] //a")))
+        lista_pins.extend(wait.until(EC.presence_of_all_elements_located((By.XPATH,"//div[@data-test-id='pinWrapper'] //a"))))
         assert lista_pins
 
         if len(lista_pins) < max_img:
@@ -136,9 +134,5 @@ def test_verifica_captura_pins(driver:WebDriver) -> None:
             break
     
     assert len(lista_pins[0:max_img]) == max_img
-
-
-
-
 
 
