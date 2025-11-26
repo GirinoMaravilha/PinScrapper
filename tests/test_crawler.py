@@ -15,74 +15,34 @@ from selenium.common.exceptions import NoSuchElementException
 import time
 
 
-# Classes
+#Testes
 
-class MockCrawlerPinterest:
-
-    """
-    Um 'Mock' da classe 'CrawlerPinterest' localizada no modulo 'crawler' dentro do pacote 'src'.
-
-    Classe usada para testar funcionalidades da classe de quem foi baseada.
-    """
-
-    def __init__(self, driver:WebDriver):
+def test_verifica_interrupcao_bloco_login(driver:WebDriver) -> None:
         
-        self.driver = driver
- 
-   
+    ### Variáveis ###
 
-    def test_verifica_interrupcao(self,lista_prompt:list[str]) -> None:
+    #Instancias WebElement
+    bloco_login = None
+    botao_fechar = None
+
+    #Lista com prompts
+    lista_prompt = ["Cat","Dog","Mouse"]
         
-        """
-        Método teste para verificar se o código do método original esta conseguindo encontrar e
-        fechar o bloco de login, que é uma das interrupções que podem ocorrer durante o crawling
-        do Pinterest.
-        """
-        #Vamos forçar o bloco de login a aparecer fazendo varias requisições
+    ### Código ###
 
-        for prompt in lista_prompt:
-            self.driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
-            time.sleep(2)
+    #Vamos forçar o bloco de login a aparecer fazendo varias requisições
+    for prompt in lista_prompt:
+        driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
+        time.sleep(2)
 
-        #Vamos tentar encontrar o bloco de login e fecha-lo
-        try:
-            bloco_login = self.driver.find_element(By.XPATH, "//div[@data-test-id='login-modal-default' and @class='ADXRXN']")
-            if bloco_login:
-                botao_fechar = bloco_login.find_element(By.XPATH,"//button[@aria-label='fechar']")
-                botao_fechar.click()
-
-                #Tempo para verificar se a pagian de Login fechou
-                time.sleep(5)
-
-                return True
+    #Vamos tentar encontrar o bloco de login e fecha-lo
+    bloco_login = driver.find_elements(By.XPATH, "//div[@data-test-id='login-modal-default' and @class='ADXRXN']")
+    assert bloco_login
         
-        #Caso não encontrar fazemos limpe-za e levantamos uma exceção
-        except InvalidSelectorException as error:
+    if bloco_login:
+        botao_fechar = bloco_login[0].find_element(By.XPATH,"//button[@aria-label='fechar']")
+        botao_fechar.click()
 
-            self.driver.quit()
-            
-            raise InvalidSelectorException
-        
-        except NoSuchElementException as error:
-
-            self.driver.quit()
-            
-            raise NoSuchElementException
-
-
-#Função Main para DEBUG direto sem o 'pytests'
-
-def main():
-    
-    driver = webdriver.Chrome()
-    lista_prompt = ['Lucy Heartfilia hot', 'Androi 18', 'Digimon 1 Mimi Adult']
-    
-
-    mockc = MockCrawlerPinterest(driver)
-    #mockc.test_verifica_interrupcao(lista_prompt)
-    mockc.test_bot_crawler_stale_exception()
-    mockc.driver.quit()
-
-
-if __name__ == "__main__":
-    main()
+        #Tentando capturar de novo para verificar se fechou
+        bloco_login = driver.find_elements(By.XPATH, "//div[@data-test-id='login-modal-default' and @class='ADXRXN']")
+        assert not bloco_login
