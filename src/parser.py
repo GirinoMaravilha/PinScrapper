@@ -45,11 +45,11 @@ class ParserHTML(ABC):
         pass
     
     @abstractmethod
-    async def bot_requisicao(self):
+    async def _bot_requisicao(self):
         pass
     
     @abstractmethod
-    async def bot_parser(self):
+    async def _bot_parser(self):
         pass
 
 
@@ -67,7 +67,7 @@ class ParserHTMLPinterest(ParserHTML):
         if not self.dict_links_html:
             self.logger.debug(f"[INIT - ParserPinterest] O dicionário fornecido esta vazio! Levantando exceção e encerrando o programa!")
             raise ValueError("O valor do argumento 'dict_links_html' não pode estar vazio!")
-        
+    
     @property
     def dict_links_html(self):
         return self._dict_links_html
