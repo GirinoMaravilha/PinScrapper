@@ -60,9 +60,13 @@ class ParserHTMLPinterest(ParserHTML):
     def __init__(self, dict_links_html:dict[str:str], logger:logging.Logger):
 
         self._dict_links_html = dict_links_html
-        self._dict_links_result = {}
+        self._dict_links_result = []
         self.logger = logger
 
+        #A quantidade de produtores que tera que ser criada para lidar com a requisição
+        self.numero_produtores = len(dict_links_html)
+
+        #Verificando ser o argumento 'dict_links_html' esta vazio
         self.logger.debug(f"[INIT - ParserPinterest] Verificando se o dicionário passado para 'dict_links_html' esta vazio.")
         if not self.dict_links_html:
             self.logger.debug(f"[INIT - ParserPinterest] O dicionário fornecido esta vazio! Levantando exceção e encerrando o programa!")
@@ -72,18 +76,10 @@ class ParserHTMLPinterest(ParserHTML):
     def dict_links_html(self):
         return self._dict_links_html
     
-    @dict_links_html.setter
-    def dict_links_result(self,valor):
-        raise AttributeError(f"O valor do atributo 'dict_links_html' não pode ser modificado diretamente! A unica maneira de modificar o valor é criando uma nova instancia!")
-    
     @property
     def dict_links_result(self):
         return self._dict_links_result
-    
-    @dict_links_result.setter
-    def dict_links_result(self,valor):
-        raise AttributeError(f"O valor do atributo 'dict_links_result' não pode ser modificado diretamente!")
-    
+
     async def parsing(self):
 
         ### Variáveis ###
@@ -136,11 +132,63 @@ class ParserHTMLPinterest(ParserHTML):
 
         ### Variáveis ###
 
+        #Numero de tentativas de requisição
+        n_req = 0
+
+        #Instancia 'Lock' para verificaçao filtrada do valor de 'self.numero_produtores'
+        lock = asyncio.Lock()
+
+        #Lista de páginas html contendo os links de cada imagem dos pins.
+        lista_html_img = []
+
+        #Variável que armazena Página html capturada em formato de string
+        html = ""
 
         ### Código ###
 
-        self.logger.debug()
+        self.logger.debug(f"[BOT_REQ - {numero}] Bot iniciado com o prompt => {prompt}")
+        self.logger.info(f"Prompt => {prompt} - Começando a coleta dos links de imagem...")
 
+        #Iniciando a iteração dos links de cada pin para realizar a requisição da pagina HTML
+        for link in lista_links_pin:
+            
+            #Reiniciando contador 'r_req' para uma nova tentativa de requisição
+            n_req = 0
+
+            #Iniciando bloco de requisição com limite de 3 'tasks' por vez
+            self.logger.debug(f"[BOT_REQ - {numero}] Iniciando requisição do link => {link}")
+            async with semaforo:
+                async with aiohttp.ClientSession() as session:
+                    #Iniciando as tentativas de requisição
+                    while True:
+                        self.logger.debug(f"[BOT_REQ - {numero}] {n_req}ª tentativa de requisição...")
+                        async with session.get(link) as resp:
+                            if resp.status == 200:
+                                self.logger.debug(f"[BOT_REQ - {numero}] Requisição do link => {link} - bem sucedida! Capturando página HTML do link => {link}")
+                                html = await resp.text()
+                                lista_html_img.append(html)
+                                self.logger.debug(f"[BOT_REQ - {numero}] - Página HTML do link => {link} capturada! encerrando loop de requisição.")
+                                break
+                        
+                            else:
+                                if n_req == 3:
+                                    self.logger.debug(f"[BOT_REQ - {numero}] {n_req}ª tentativa de requisição!")
+                                    self.logger.debug(f"[BOT_REQ - {numero}] Limite excedido! Ignorando link => {link} e seguindo o fluxo...")
+                                    break
+
+        #Depois de capturar todas as paginas HTML de cada link dos pins colocamos a tupla dentro da Queue
+        self.logger.debug(f"[BOT_REQ - {numero}] Captura de páginas HTML para o prompt {prompt} terminada!")
+        self.logger.debug(f"[BOT_REQ - {numero}] Colocando tupla com valores do prompt e sua lista de paginas HTML de cada link dos pins na pipeline...")
+        await fila.put((prompt,lista_html_img))
+        fila.task_done()
+
+        #Sinalizando o fim da produção e verificando o numero de produtores ativos para a ativação da flag no 'Event', sinalizando o fim da pipeline
+        self.logger.debug(f"[BOT_REQ - {numero}] Sinalizando o fim da produção e verificando a quantidade de produtores ativos....")
+        async with lock:
+            self.numero_produtores -= 1
+            if not self.numero_produtores:
+                self.logger.debug(f"[BOT_REQ - {numero}] Todos os produtores terminaram! Ativando a flag 'set' da instância 'Event'! Fim de produção na pipeline!")
+                evento.set()
     
     async def _bot_parser(self, numero:int, fila:asyncio.Queue, evento:asyncio.Event) -> None:
         pass
