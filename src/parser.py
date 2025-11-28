@@ -19,7 +19,7 @@ Notas:
 
 """
 
-#TODO O que falta para finalizar o módulo?
+#TODO O que falta para finalizar esta etapa do projeto?
 # - Tratamento de exceções e encapsulamento correto de atributos.
 # - Criação do módulo 'test_parser.py' para a criação de funções/métodos teste de todas as funcionalidades
 #   mais importantes do módulo 'parser.py.
