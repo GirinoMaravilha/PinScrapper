@@ -19,6 +19,11 @@ Notas:
 
 """
 
+#TODO O que falta para finalizar o módulo?
+# - Tratamento de exceções e encapsulamento correto de atributos.
+# - Criação do módulo 'test_parser.py' para a criação de funções/métodos teste de todas as funcionalidades
+#   mais importantes do módulo 'parser.py.
+# - Documentar todos o métodos e classes.
 
 from bs4 import BeautifulSoup
 import aiohttp
@@ -26,8 +31,6 @@ import asyncio
 from abc import ABC,abstractmethod
 import logging
 from utils import configurando_logger, salva_pagina_html
-from crawler import CrawlerPinterest
-from selenium import webdriver
 from traceback import format_exc
 
 
