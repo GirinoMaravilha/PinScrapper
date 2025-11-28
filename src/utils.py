@@ -22,6 +22,10 @@ Função: salva_links_pin()
 => Função que recebe um dicionario contendo listas com links de 'pin' do Pinterest, e salva eles
    em arquivo texto.
 
+Função: salva_pagina_html()
+
+=> Função que recebe uma página html em formato 'string', e salva ela em um arquivo texto.
+
 Classe: MaxFilter(logging.Filter)
 
 => Classe que cria um filtro para uma instancia "StreamHandler".
@@ -156,8 +160,39 @@ async def mock_parser(numero:int,logger:logging.Logger,fila:asyncio.Queue,evento
         #Chamando método 'task_done' para indicar a Queue que um valor foi processado
         fila.task_done()
 
+def salva_pagina_html(pagina_html:str) -> None:
 
-def salva_html(dict_html:dict[str:str]):
+    """
+    Função que recebe uma string, sendo esta uma página HTML, e a salva em um arquivo texto
+    dentro de um diretório.
+
+    Args:
+        pagina_html(str): Página HTML em formato string.
+    """
+
+    ### Variáveis ###
+
+    #Variável que armazena o tempo atual
+    tempo_atual = ""
+
+    #Instancia da classe Path
+    path = None
+
+    ### Código ####
+
+    #Capturando tempo atual
+    tempo_atual = time.strftime(fr"%d %m %Y - %H %M %S", time.localtime())
+
+    #Criando um diretório para salvar as páginas HTML
+    path = Path(f"./Páginas HTML")
+    path.mkdir(exist_ok=True)
+
+    #Criando o arquivo texto com a págin HTML
+    with open(f"{path}/pagina_html - {tempo_atual}.txt","w",encoding="UTF-8") as arq:
+        arq.write(pagina_html)
+
+
+def salva_html(dict_html:dict[str:str]) -> None:
 
     """
     
@@ -192,7 +227,7 @@ def salva_html(dict_html:dict[str:str]):
             arq.write(pagina)
 
 
-def salva_links_pin(dict_links:dict[str,list[str]]) -> None:
+def salva_links(dict_links:dict[str,list[str]]) -> None:
 
     """
     Função que recebe um dicionário contendo um lista com links de 'pins' do Pinterest e salva eles
@@ -264,8 +299,11 @@ def main():
 
 
     #Testando a função 'salva_links_pin'
-    dict_links = {"prompt1":["1 Link1","1 Link2","1 Link3"],"prompt2":["2 Link1","2 Link2","2 Link3"],"prompt3":["3 Link1","3 Link2","3 Link3"]}
-    salva_links_pin(dict_links)
+    #dict_links = {"prompt1":["1 Link1","1 Link2","1 Link3"],"prompt2":["2 Link1","2 Link2","2 Link3"],"prompt3":["3 Link1","3 Link2","3 Link3"]}
+    #salva_links(dict_links)
+
+    #Testando função 'salva_pagina_html'
+    salva_pagina_html("<p> Ola, tudo bem?</p>")
 
 
 if __name__ == "__main__":
