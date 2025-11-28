@@ -45,7 +45,7 @@ from selenium.common.exceptions import WebDriverException
 
 import logging
 from utils import configurando_logger
-from utils import salva_links_pin
+from utils import salva_links
 import time
 from traceback import format_exc
 from abc import ABC,abstractmethod
@@ -466,7 +466,7 @@ def main():
     ### Variáveis ###
 
     #Testando instancia do CrawlerImagens na captura de páginas HTML
-    mock_lista_prompt = ["Nami One piece blowjob"] 
+    mock_lista_prompt = ["Nami One Piece", "Lucy Heatfilia", "Mimi Digimon Adult"] 
     mock_lista_prompt_vazia = []
     logger = configurando_logger(debug_mode=False)
     driver = webdriver.Chrome()
@@ -483,8 +483,11 @@ def main():
         #c = CrawlerPinterest(driver,logger,mock_lista_prompt_vazia)
         dict_links = c.bot_crawler()
 
+        #Printando o valor de dict_links para utilizarmos na depuração da classe 'ParserHTMLPinterest' no modulo 'parser.py'
+        print(dict_links)
+
         #Verificando páginas capturadas em arquivo
-        salva_links_pin(dict_links)
+        #salva_links(dict_links)
     
     except Exception as error:
         logger.info("Uma Exceção foi levantada! Verifique o relatório 'Error.log' para mais informações.")

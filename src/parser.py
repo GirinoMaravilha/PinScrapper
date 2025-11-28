@@ -25,6 +25,10 @@ import aiohttp
 import asyncio
 from abc import ABC,abstractmethod
 import logging
+from utils import configurando_logger, salva_pagina_html
+from crawler import CrawlerPinterest
+from selenium import webdriver
+from traceback import format_exc
 
 
 #Classe Abstrata
@@ -62,28 +66,17 @@ class ParserHTMLPinterest(ParserHTML):
         self._dict_links_html = dict_links_html
         self._dict_links_result = []
         self.logger = logger
+        self.contador_de_acoes = 0
 
         #A quantidade de produtores que tera que ser criada para lidar com a requisição
         self._numero_produtores = len(dict_links_html)
 
         #Verificando ser o argumento 'dict_links_html' esta vazio
         self.logger.debug(f"[INIT - ParserPinterest] Verificando se o dicionário passado para 'dict_links_html' esta vazio.")
-        if not self.dict_links_html:
+        if not self._dict_links_html:
             self.logger.debug(f"[INIT - ParserPinterest] O dicionário fornecido esta vazio! Levantando exceção e encerrando o programa!")
             raise ValueError("O valor do argumento 'dict_links_html' não pode estar vazio!")
     
-    @property
-    def numero_produtores(self):
-        return self._numero_produtores
-
-    @property
-    def dict_links_html(self):
-        return self._dict_links_html
-    
-    @property
-    def dict_links_result(self):
-        return self._dict_links_result
-
     async def parsing(self):
 
         ### Variáveis ###
@@ -118,11 +111,12 @@ class ParserHTMLPinterest(ParserHTML):
 
         #Iniciando tarefas de requisição e parsing
         self.logger.debug("\n[PARSING] Iniciando tarefas de requisição e parsing das paginas html coletadas!")
-        for prompt,lista in self.dict_links_html.items():
+        self.logger.debug(f"\n[PARSING] Valor da quantidade de produtores no atributo 'self._numero_produtores' => {self._numero_produtores}")
+        for prompt,lista in self._dict_links_html.items():
             n_req += 1
             lista_task_req.append(asyncio.create_task(self._bot_requisicao(n_req,prompt,lista,fila,evento,semaforo)))
         
-        lista_task_parse = [asyncio.create_task(self._bot_parser(n+1, fila, evento)) for n in range(len(self.dict_links_html))]
+        lista_task_parse = [asyncio.create_task(self._bot_parser(n+1, fila, evento)) for n in range(len(self._dict_links_html))]
 
         #Iniciando método 'join' da 'Queue' para interromper a execução do método até o fluxo da pipeline terminar
         await fila.join()
@@ -131,6 +125,10 @@ class ParserHTMLPinterest(ParserHTML):
         await asyncio.gather(*lista_task_req,*lista_task_parse)
 
         #TODO #* ------------ Continua.... ------------*#
+        self.logger.debug("[PARSING]Bots de requisição finalizados! Encerrando o programa!")
+        
+        #DEBUG
+        print(F"Quantidade de ações realizadas pelo bots => {self.contador_de_acoes}")
 
     async def _bot_requisicao(self,numero:int, prompt:str, lista_links_pin:list[str], fila:asyncio.Queue, evento:asyncio.Event, semaforo:asyncio.Semaphore) -> None:
 
@@ -165,11 +163,25 @@ class ParserHTMLPinterest(ParserHTML):
                 async with aiohttp.ClientSession() as session:
                     #Iniciando as tentativas de requisição
                     while True:
+
+                        #Incrementando valor do contador, indicando mais uma tentativa de requisição
+                        n_req +=1 
+
+                        #Começando requisição
                         self.logger.debug(f"[BOT_REQ - {numero}] {n_req}ª tentativa de requisição...")
-                        async with session.get(link) as resp:
+                        async with session.get(link, max_field_size=16384) as resp:
                             if resp.status == 200:
                                 self.logger.debug(f"[BOT_REQ - {numero}] Requisição do link => {link} - bem sucedida! Capturando página HTML do link => {link}")
                                 html = await resp.text()
+
+                                """
+                                #DEBUG
+                                #Salvando pagina requisitada para verificar se existe o link nela
+                                async with lock:
+                                    salva_pagina_html(html)
+                                    self.contador_de_acoes += 1
+                                """
+
                                 lista_html_img.append(html)
                                 self.logger.debug(f"[BOT_REQ - {numero}] - Página HTML do link => {link} capturada! encerrando loop de requisição.")
                                 break
@@ -189,8 +201,8 @@ class ParserHTMLPinterest(ParserHTML):
         #Sinalizando o fim da produção e verificando o numero de produtores ativos para a ativação da flag no 'Event', sinalizando o fim da pipeline
         self.logger.debug(f"[BOT_REQ - {numero}] Sinalizando o fim da produção e verificando a quantidade de produtores ativos....")
         async with lock:
-            self.numero_produtores -= 1
-            if not self.numero_produtores:
+            self._numero_produtores -= 1
+            if not self._numero_produtores:
                 self.logger.debug(f"[BOT_REQ - {numero}] Todos os produtores terminaram! Ativando a flag 'set' da instância 'Event'! Fim de produção na pipeline!")
                 evento.set()
     
@@ -198,10 +210,26 @@ class ParserHTMLPinterest(ParserHTML):
         pass
 
 
-#Função Main
+#Função Main para depuração
 
 def main():
-    pass
+
+    logger = configurando_logger(debug_mode=True)
+    dict_links = {
+        'Nami One Piece': ['https://br.pinterest.com/pin/41799102786179161/', 'https://br.pinterest.com/pin/2040762327287919/', 'https://br.pinterest.com/pin/32580797302853515/', 'https://br.pinterest.com/pin/1125968650715952/', 'https://br.pinterest.com/pin/14355292555640003/', 'https://br.pinterest.com/pin/2040762327232209/', 'https://br.pinterest.com/pin/7881368093174342/', 'https://br.pinterest.com/pin/4292562138627762/', 'https://br.pinterest.com/pin/19351473394862096/', 'https://br.pinterest.com/pin/152066924913960274/'], 
+        'Lucy Heatfilia': ['https://br.pinterest.com/pin/283586107781129519/', 'https://br.pinterest.com/pin/128774870592476656/', 'https://br.pinterest.com/pin/7529524372889663/', 'https://br.pinterest.com/pin/45387908740319673/', 'https://br.pinterest.com/pin/62557882318282315/', 'https://br.pinterest.com/pin/20407004557347201/', 'https://br.pinterest.com/pin/42854633949068353/', 'https://br.pinterest.com/pin/45387908740319667/', 'https://br.pinterest.com/pin/313070611616883732/', 'https://br.pinterest.com/pin/113153009394037713/'], 
+        'Mimi Digimon Adult': ['https://br.pinterest.com/pin/59391288832866781/', 'https://br.pinterest.com/pin/209839663883493938/', 'https://br.pinterest.com/pin/415738609349071096/', 'https://br.pinterest.com/pin/48343395986948828/', 'https://br.pinterest.com/pin/145381894219596196/', 'https://br.pinterest.com/pin/109071622221470085/', 'https://br.pinterest.com/pin/408490628716239437/', 'https://br.pinterest.com/pin/176484879144154072/', 'https://br.pinterest.com/pin/426997608397750499/', 'https://br.pinterest.com/pin/15973773657761385/']}
+
+    try:
+        parser = ParserHTMLPinterest(dict_links,logger)
+        asyncio.run(parser.parsing())
+    
+    except KeyboardInterrupt as error:
+        logger.debug(f"[MAIN] Interrupção do teclado detectada! Interrompendo programa....")
+    
+    except Exception as error:
+        logger.debug("[MAIN] Uma exceçao ocorreu! Verifique o relatório de erro 'Error.log'!")
+        logger.error(f"[MAIN] Exceção => {error}\n\nTraceback =>{format_exc()}")
 
 
 if __name__ == "__main__":
