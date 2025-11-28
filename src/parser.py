@@ -300,7 +300,7 @@ def main():
 
     try:
         parser = ParserHTMLPinterest(dict_links,logger)
-        asyncio.run(parser.parsing())
+        print(asyncio.run(parser.parsing()))
     
     except KeyboardInterrupt as error:
         logger.debug(f"[MAIN] Interrupção do teclado detectada! Interrompendo programa....")
