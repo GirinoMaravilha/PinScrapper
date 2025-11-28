@@ -124,11 +124,11 @@ class ParserHTMLPinterest(ParserHTML):
         #Método 'asyncio.gather' para esperar todas as tarefas terminarem
         await asyncio.gather(*lista_task_req,*lista_task_parse)
 
-        #TODO #* ------------ Continua.... ------------*#
-        self.logger.debug("[PARSING]Bots de requisição finalizados! Encerrando o programa!")
+        self.logger.debug("[PARSING] Bots de requisição e parsing finalizados! Encerrando o programa e retornando dicionario contendo as listas com todos os links de imagens")
+        return dict(self._dict_links_result)
         
         #DEBUG
-        print(F"Quantidade de ações realizadas pelo bots => {self.contador_de_acoes}")
+        #print(f"Quantidade de ações realizadas pelo bots => {self.contador_de_acoes}")
 
     async def _bot_requisicao(self,numero:int, prompt:str, lista_links_pin:list[str], fila:asyncio.Queue, evento:asyncio.Event, semaforo:asyncio.Semaphore) -> None:
 
@@ -174,13 +174,13 @@ class ParserHTMLPinterest(ParserHTML):
                                 self.logger.debug(f"[BOT_REQ - {numero}] Requisição do link => {link} - bem sucedida! Capturando página HTML do link => {link}")
                                 html = await resp.text()
 
-                                """
+                                
                                 #DEBUG
                                 #Salvando pagina requisitada para verificar se existe o link nela
-                                async with lock:
-                                    salva_pagina_html(html)
-                                    self.contador_de_acoes += 1
-                                """
+                                #async with lock:
+                                #    salva_pagina_html(html)
+                                #    self.contador_de_acoes += 1
+                                
 
                                 lista_html_img.append(html)
                                 self.logger.debug(f"[BOT_REQ - {numero}] - Página HTML do link => {link} capturada! encerrando loop de requisição.")
@@ -196,7 +196,6 @@ class ParserHTMLPinterest(ParserHTML):
         self.logger.debug(f"[BOT_REQ - {numero}] Captura de páginas HTML para o prompt {prompt} terminada!")
         self.logger.debug(f"[BOT_REQ - {numero}] Colocando tupla com valores do prompt e sua lista de paginas HTML de cada link dos pins na pipeline...")
         await fila.put((prompt,lista_html_img))
-        fila.task_done()
 
         #Sinalizando o fim da produção e verificando o numero de produtores ativos para a ativação da flag no 'Event', sinalizando o fim da pipeline
         self.logger.debug(f"[BOT_REQ - {numero}] Sinalizando o fim da produção e verificando a quantidade de produtores ativos....")
@@ -207,8 +206,87 @@ class ParserHTMLPinterest(ParserHTML):
                 evento.set()
     
     async def _bot_parser(self, numero:int, fila:asyncio.Queue, evento:asyncio.Event) -> None:
-        pass
+        
+        ### Variáveis ###
 
+        #Lista de links de imagem coletados das paginas HTML fornecidas na PIPELINE pelos tasks '_bot_requisicao'
+        lista_links_img = []
+
+        #Variável que armazena valores retirados da Queue, contendo o prompt e uma lista de páginas HTML
+        prompt = ""
+        lista_paginas_html = []
+
+        #Numero de paginas onde foi realizado o 'Parsing'
+        n_parser = 0
+
+        #Link retirado da pagina HTML
+        link = ""
+
+        ### Código ###
+
+        self.logger.debug(f"[BOT_PARSER - {numero}] Bot de Parsing Iniciado!")
+        
+        #Iniciando fluxo de coleta de valores da pipeline
+        while True:
+            
+            #Reiniciando variáveis para uma nova execução
+            n_parser = 0
+            lista_links_img = []
+
+            #Verificando se a produção terminou para o encerramento do bot
+            if fila.empty() and evento.is_set():
+                self.logger.debug(f"[BOT_PARSER - {numero}] A pipeline esta vazia! Flag da instancia 'Event' ativada! Produção terminou, encerrando o bot...")
+                break
+            
+            #Tentando retirar valor da pipeline
+            self.logger.debug(f"[BOT_PARSER - {numero}] Retirando valor da pipeline...")
+            try:
+                prompt,lista_paginas_html = await asyncio.wait_for(fila.get(),5)
+                
+                #Iniciando a iteração para a retirada do link de cada página HTML
+                self.logger.debug(f"[BOT_PARSER - {numero}] Iniciando Parsing das paginas do prompt => {prompt}")
+                for pagina_html in lista_paginas_html:
+                    n_parser += 1
+                    self.logger.debug(f"[BOT_PARSER - {numero}] Realizando o parsing da {n_parser}ª pagina....")
+                    link = self._parsing_link(pagina_html)
+                    lista_links_img.append(link)
+            
+            except asyncio.TimeoutError as error:
+                self.logger.debug(f"\n[BOT_PARSER - {numero}] Bot demorou demais para retirar valor da pipeline! Seguindo o fluxo...")
+                continue
+            
+            #Sinalizando que um item da pipeline foi processado e armazenando resultados
+            self.logger.debug(f"\n[BOT_PARSER - {numero}] Parsing de todas as páginas do prompt => {prompt} realizado! Atribuindo tupla com o prompt e lista de links ao atributo 'self._dict_links_result'")
+            self._dict_links_result.append((prompt,lista_links_img))
+            fila.task_done()
+    
+    def _parsing_link(self,pagina_html:str) -> str:
+
+        ### Variáveis ###
+
+        #Instancia do BeautifulSoup
+        soup = None
+
+        #Tag <div> que contem a tag <img>
+        div = None
+
+        #Tag <img> que contem o link da imagem
+        img = None
+
+        ### Código ###
+
+        #Iniciando instancia do BeautifulSoup com a página HTML
+        soup = BeautifulSoup(pagina_html,"html.parser")
+
+        #Retirando o div que contem a tag '<img>' com o link da imagem
+        div = soup.find("div",attrs={"data-test-id":"pin-closeup-image"})
+
+        #Retirando a tag <img>
+        img = div.find("img")
+
+        #Retornando link
+        return img['src']
+                
 
 #Função Main para depuração
 
