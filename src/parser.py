@@ -64,7 +64,7 @@ class ParserHTMLPinterest(ParserHTML):
         self.logger = logger
 
         #A quantidade de produtores que tera que ser criada para lidar com a requisição
-        self.numero_produtores = len(dict_links_html)
+        self._numero_produtores = len(dict_links_html)
 
         #Verificando ser o argumento 'dict_links_html' esta vazio
         self.logger.debug(f"[INIT - ParserPinterest] Verificando se o dicionário passado para 'dict_links_html' esta vazio.")
@@ -72,6 +72,10 @@ class ParserHTMLPinterest(ParserHTML):
             self.logger.debug(f"[INIT - ParserPinterest] O dicionário fornecido esta vazio! Levantando exceção e encerrando o programa!")
             raise ValueError("O valor do argumento 'dict_links_html' não pode estar vazio!")
     
+    @property
+    def numero_produtores(self):
+        return self._numero_produtores
+
     @property
     def dict_links_html(self):
         return self._dict_links_html
@@ -116,7 +120,7 @@ class ParserHTMLPinterest(ParserHTML):
         self.logger.debug("\n[PARSING] Iniciando tarefas de requisição e parsing das paginas html coletadas!")
         for prompt,lista in self.dict_links_html.items():
             n_req += 1
-            lista_task_req.append(asyncio.create_task(self._bot_requisicao(n_req,prompt,lista,fila,evento)))
+            lista_task_req.append(asyncio.create_task(self._bot_requisicao(n_req,prompt,lista,fila,evento,semaforo)))
         
         lista_task_parse = [asyncio.create_task(self._bot_parser(n+1, fila, evento)) for n in range(len(self.dict_links_html))]
 
@@ -138,7 +142,7 @@ class ParserHTMLPinterest(ParserHTML):
         #Instancia 'Lock' para verificaçao filtrada do valor de 'self.numero_produtores'
         lock = asyncio.Lock()
 
-        #Lista de páginas html contendo os links de cada imagem dos pins.
+        #Lista de páginas html contendo o link de cada imagem
         lista_html_img = []
 
         #Variável que armazena Página html capturada em formato de string
