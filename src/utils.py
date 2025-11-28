@@ -184,7 +184,7 @@ def salva_pagina_html(pagina_html:str) -> None:
     tempo_atual = time.strftime(fr"%d %m %Y - %H %M %S", time.localtime())
 
     #Criando um diretório para salvar as páginas HTML
-    path = Path(f"./Páginas HTML - {tempo_atual}")
+    path = Path(f"./Páginas HTML")
     path.mkdir(exist_ok=True)
 
     #Criando o arquivo texto com a págin HTML
@@ -299,8 +299,11 @@ def main():
 
 
     #Testando a função 'salva_links_pin'
-    dict_links = {"prompt1":["1 Link1","1 Link2","1 Link3"],"prompt2":["2 Link1","2 Link2","2 Link3"],"prompt3":["3 Link1","3 Link2","3 Link3"]}
-    salva_links_pin(dict_links)
+    #dict_links = {"prompt1":["1 Link1","1 Link2","1 Link3"],"prompt2":["2 Link1","2 Link2","2 Link3"],"prompt3":["3 Link1","3 Link2","3 Link3"]}
+    #salva_links(dict_links)
+
+    #Testando função 'salva_pagina_html'
+    salva_pagina_html("<p> Ola, tudo bem?</p>")
 
 
 if __name__ == "__main__":
