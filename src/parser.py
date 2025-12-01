@@ -20,12 +20,12 @@ Notas:
 """
 
 #TODO O que falta para finalizar esta etapa do projeto?
-# - Tratamento de exceções e encapsulamento correto de atributos.
+# - Tratamento de exceções e encapsulamento correto de atributos. - Ok! :D
 # - Criação do módulo 'test_parser.py' para a criação de funções/métodos teste de todas as funcionalidades
 #   mais importantes do módulo 'parser.py.
 # - Documentar todos o métodos e classes.
-# - Output para o usuário como 'logger.info'
-# - Fazer o cacheamento dos valores de resultado
+# - Output para o usuário como 'logger.info' - Ok! :D
+# - Fazer o cacheamento dos valores de resultado - Ok! :D
 
 from bs4 import BeautifulSoup
 import aiohttp
@@ -281,6 +281,7 @@ class ParserHTMLPinterest(ParserHTML):
             
             #Sinalizando que um item da pipeline foi processado e armazenando resultados
             self.logger.debug(f"\n[BOT_PARSER - {numero}] Parsing de todas as páginas do prompt => {prompt} realizado! Atribuindo tupla com o prompt e lista de links ao atributo 'self._dict_links_result'")
+            self.logger.info(f"Coleta de todos os links das imagens do prompt => {prompt} - realizada!")
             self._dict_links_result.append((prompt,lista_links_img))
             fila.task_done()
     
@@ -316,7 +317,7 @@ class ParserHTMLPinterest(ParserHTML):
 
 def main():
 
-    logger = configurando_logger(debug_mode=True)
+    logger = configurando_logger(debug_mode=False)
     dict_links = {
         'Nami One Piece': ['https://br.pinterest.com/pin/41799102786179161/', 'https://br.pinterest.com/pin/2040762327287919/', 'https://br.pinterest.com/pin/32580797302853515/', 'https://br.pinterest.com/pin/1125968650715952/', 'https://br.pinterest.com/pin/14355292555640003/', 'https://br.pinterest.com/pin/2040762327232209/', 'https://br.pinterest.com/pin/7881368093174342/', 'https://br.pinterest.com/pin/4292562138627762/', 'https://br.pinterest.com/pin/19351473394862096/', 'https://br.pinterest.com/pin/152066924913960274/'], 
         'Lucy Heatfilia': ['https://br.pinterest.com/pin/283586107781129519/', 'https://br.pinterest.com/pin/128774870592476656/', 'https://br.pinterest.com/pin/7529524372889663/', 'https://br.pinterest.com/pin/45387908740319673/', 'https://br.pinterest.com/pin/62557882318282315/', 'https://br.pinterest.com/pin/20407004557347201/', 'https://br.pinterest.com/pin/42854633949068353/', 'https://br.pinterest.com/pin/45387908740319667/', 'https://br.pinterest.com/pin/313070611616883732/', 'https://br.pinterest.com/pin/113153009394037713/'], 
