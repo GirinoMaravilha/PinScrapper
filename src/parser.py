@@ -23,7 +23,7 @@ Notas:
 # - Tratamento de exceções e encapsulamento correto de atributos. - Ok! :D
 # - Criação do módulo 'test_parser.py' para a criação de funções/métodos teste de todas as funcionalidades
 #   mais importantes do módulo 'parser.py.
-# - Documentar todos o métodos e classes.
+# - Documentar todos o métodos e classes. - Ok! :D
 # - Output para o usuário como 'logger.info' - Ok! :D
 # - Fazer o cacheamento dos valores de resultado - Ok! :D
 
@@ -67,7 +67,31 @@ class ParserHTML(ABC):
 
 class ParserHTMLPinterest(ParserHTML):
 
-    def __init__(self, dict_links_html:dict[str:str], logger:logging.Logger):
+    """
+    Classe que implementa um 'Parser' para requisição e coleta de dados de páginas HTML do Pinterest.
+
+    Esta classe realiza a requisição de páginas HTML do 'pins' do site do Pinterest. Depois de realizada
+    a requisição, a classe retira de cada página o link da imagem do 'pin', e o armazena em uma lista
+    que ira ser atribuida a um dicionario, tendo como chave da mesma, o prompt que gerou os pins.
+
+    Attributes:
+        _dict_links_html (dict[str,list[str]]): Dicionário, que tem como seu valor, listas de links de páginas HTML, e o  prompt que as geraram como chave. 
+                                          O atributo é encapsulado e não deve ser modificado diretamente.
+
+        _dict_links_result (list[str]): Lista de tuplas usada para armazenar os resultados do 'parsing' feito pelo método '_bot_parser',
+                                        que adiciona ao valor da lista, uma tupla contendo o prompt e a lista de links retirados de todas
+                                        as páginas HTML do atributo '_dict_links_html'. O atributo é encapsulado e não deve ser modificado 
+                                        diretamente.
+
+        logger (Logger): Logger usado para registrar mensagens e exceções.
+
+        _numero_de_produtores (int): A quantidade de 'tasks' ou 'corroutines' que teram que ser criados para lidar como o numero de requisições.
+                                    leva o mesmo valor da quantidade de valores do atributo '_dict_links_html'. O atributo é encapsulado e não deve ser modificado 
+                                    diretamente.
+        
+    """
+
+    def __init__(self, dict_links_html:dict[str,str], logger:logging.Logger):
 
         self._dict_links_html = dict_links_html
         self._dict_links_result = []
@@ -109,7 +133,26 @@ class ParserHTMLPinterest(ParserHTML):
     def numero_produtores(self,valor):
         raise AttributeError("Acesso Negado! O atributo '_numero_produtores' não pode ser modificado diretamente!")
     
-    async def parsing(self):
+    async def parsing(self) -> dict[str,list[str]]:
+
+        """
+        Método que controla todo o fluxo de requisição/parsing dos links de 'pin' fornecidos pelo atributo 'self._dict_links_html'.
+
+        O método 'parsing' cria 'tasks' assincronas relacionadas a quantidade de valores armazenados no dicionario
+        que esta como valor do atributo 'self._dict_links_html'.
+
+        Isso é realizado pois cada chave do dicionário é um "prompt", que leva como seu valor, uma lista de links de pins 
+        que contem páginas HTML de cada pin que apareceu durante a pesquisa de imagens no Pinterest usando esse mesmo 'prompt'.
+
+        Assim, cada 'task' tem como responsabilidade individual um "prompt" especifico e sua lista de páginas HTML. Isso
+        deixa todo o processo mais organizado e limpo, e faz com que retornar os valores de resultado fique muito mais fácil.
+
+        Essa regra de cada 'task' cuidar de um prompt especifico, junto com sua lista de links de 'pins', funciona para ambos métodos
+        assincronos '_bot_requisicao' e _bot_parser' que são utilizados para criar 'tasks' pelo método 'parsing'.
+
+        Returns:
+            dict[str,list[str]]: Dicionário onde cada chave é um prompt e o valor é uma lista de links de imagens coletados.
+        """
 
         #Verificando cacheamento antes da execução da lógica interna de 'parsing'
         if self._dict_links_result:
@@ -165,6 +208,39 @@ class ParserHTMLPinterest(ParserHTML):
 
     async def _bot_requisicao(self,numero:int, prompt:str, lista_links_pin:list[str], fila:asyncio.Queue, evento:asyncio.Event, semaforo:asyncio.Semaphore) -> None:
 
+        """
+        Método assíncrono que executa a requisição de paǵinas HTML.
+
+        O método realiza a requisição das paginas HTML dos links da lista que esta atribuida ao argumento 'lista_links_pin'.
+        Esssas paginas sera colocadas novamente em uma lista, e esta lista ira ser inserida em uma tupla, junto ao valor do argumento
+        prompt. Essa tupla entao é inserida na pipeline do argumento 'fila'.
+
+        O processo descrito acima é todo o fluxo de trabalho desse método assíncrono. 
+        
+        AVISO: O método é encapsulado, ou seja, faz parte da lógica interna da classe portanto não deve ser chamado diretamente.
+
+        Args:
+            numero (int): Número de identificação usado para referenciar cada instância 'task' do método '_bot_requsicao'.
+            
+            prompt (str): String que foi usada na pesquisa do Pinterest, e que gerou a lista de links de 'pins' atribuidas a ele
+                          e localizadas no argumento 'lista_links_pin'.
+            
+            lista_links_pin (list[str]): Lista que contem todos os links de 'pins' que serão utilizados para realizar a requisição da
+                                         página HTML de cada um. Esses links são dos 'pins' resultados da pesquisa no Pinterest, usando
+                                         o valor do argumento 'prompt'.
+            
+            fila (asyncio.Queue): Instancia da classe 'Queue' do módulo 'asyncio'. Utilizada para o método interagir com a pipeline. Inserindo
+                                  valores dentro dela que serão utilizados por 'tasks' do método assíncrono '_bot_parser'.
+            
+            evento (asyncio.Event): Instancia da classe 'Event' do módulo 'asyncio'. Utilizada para sinalizar o fim da produção, chamando o método
+                                    'set' da instancia para ativar uma flag interna da mesma.
+            
+            semaforo (asyncio.Semaphore): Instancia da classe 'Semaphore' do módulo 'asyncio'. Utilizada para limitar a interação com um bloco de código
+                                          dentro da lógica interna do método por diferentes 'tasks'. No caso o bloco limitado é o de requisição da página HTML
+                                          ao servidor do Pinterest.
+
+        """
+
         ### Variáveis ###
 
         #Numero de tentativas de requisição
@@ -214,6 +290,7 @@ class ParserHTMLPinterest(ParserHTML):
                                 if n_req == 3:
                                     self.logger.debug(f"[BOT_REQ - {numero}] {n_req}ª tentativa de requisição!")
                                     self.logger.debug(f"[BOT_REQ - {numero}] Limite excedido! Ignorando link => {link} e seguindo o fluxo...")
+                                    self.logger.info(f"Problema ao fazer a requisição do link => {link} - do prompt => {prompt}")
                                     break
 
         #Depois de capturar todas as paginas HTML de cada link dos pins colocamos a tupla dentro da Queue
@@ -230,6 +307,30 @@ class ParserHTMLPinterest(ParserHTML):
                 evento.set()
     
     async def _bot_parser(self, numero:int, fila:asyncio.Queue, evento:asyncio.Event) -> None:
+
+        """
+        Método assíncrono que executa o 'parsing' de páginas HTML da tupla retirada da pipeline.
+
+        O método executa o parsing das páginas HTML encontradas na lista da tupla que é retirada por ele da pipeline de 'fila'.
+        O 'parsing' da página retira o link de imagem da página do 'pin', e insere ele em uma lista, que depois de completa, é
+        colocada em uma tupla junto ao 'prompt' (Que é o primeiro valor da tupla retirada da pipeline).
+
+        A tupla por sua vez é armazenada na lista 'dict_links_result' que é uma atributo da classe.
+
+        AVISO: O método é encapsulado, ou seja, faz parte da lógica interna da classe portanto não deve ser chamado diretamente.
+
+        Args:
+            numero (int): Número de identificação usado para referenciar cada instância 'task' do método '_bot_parser'.
+
+            fila (asyncio.Queue): Instancia da classe 'Queue' do módulo 'asyncio'. Utilizada para o método interagir com a pipeline, retirando
+                                  valores dentro dela que serão utilizados por sua lógica interna.
+            
+            evento (asyncio.Event): Instancia da classe 'Event' do módulo 'asyncio'. Utilizada para verificar o fim da produção, chamando o método
+                                    'is_set'.
+
+        Raises:
+            asyncio.TimeoutError: Exceção levantada quando o método, sendo uma 'task', demora demais para retirar uma valor da pipeline.
+        """
         
         ### Variáveis ###
 
@@ -286,6 +387,16 @@ class ParserHTMLPinterest(ParserHTML):
             fila.task_done()
     
     def _parsing_link(self,pagina_html:str) -> str:
+
+        """
+        Método auxiliar que retira links de imagem de uma página HTML.
+
+        Args:
+            pagina_html(str): Página HTML de onde sera retirado o link.
+
+        Returns:
+            str: Link da imagem de uma página de 'pin' do 'Pinterest'.
+        """
 
         ### Variáveis ###
 
