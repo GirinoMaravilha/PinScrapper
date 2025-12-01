@@ -24,6 +24,8 @@ Notas:
 # - Criação do módulo 'test_parser.py' para a criação de funções/métodos teste de todas as funcionalidades
 #   mais importantes do módulo 'parser.py.
 # - Documentar todos o métodos e classes.
+# - Output para o usuário como 'logger.info'
+# - Fazer o cacheamento dos valores de resultado
 
 from bs4 import BeautifulSoup
 import aiohttp
@@ -32,6 +34,7 @@ from abc import ABC,abstractmethod
 import logging
 from utils import configurando_logger, salva_pagina_html
 from traceback import format_exc
+from types import MappingProxyType
 
 
 #Classe Abstrata
@@ -69,7 +72,6 @@ class ParserHTMLPinterest(ParserHTML):
         self._dict_links_html = dict_links_html
         self._dict_links_result = []
         self.logger = logger
-        self.contador_de_acoes = 0
 
         #A quantidade de produtores que tera que ser criada para lidar com a requisição
         self._numero_produtores = len(dict_links_html)
@@ -80,7 +82,38 @@ class ParserHTMLPinterest(ParserHTML):
             self.logger.debug(f"[INIT - ParserPinterest] O dicionário fornecido esta vazio! Levantando exceção e encerrando o programa!")
             raise ValueError("O valor do argumento 'dict_links_html' não pode estar vazio!")
     
+    #Encapsulamento do atributo '_dict_links_html'
+    @property
+    def dict_links_html(self):
+        return MappingProxyType(self._dict_links_html)
+    
+    @dict_links_html.setter
+    def dict_links_html(self,valor):
+        raise AttributeError("Acesso Negado! O atributo '_dict_links_html' não pode ser modificado diretamente! Crie uma nova instância de 'ParserHTMLPinterest' para realizar uma nova atribuição!")
+
+    #Encapsulamento do atributo '_dict_links_result'
+    @property
+    def dict_links_result(self):
+        return tuple(self._dict_links_result)
+    
+    @dict_links_result.setter
+    def dict_links_result(self,valor):
+        raise AttributeError("Acesso Negado! O atributo '_dict_links_result' não pode ser modificado diretamente!")
+
+    #Encapsulamento do atributo '_numero_produtores'
+    @property
+    def numero_produtores(self):
+        return tuple(self._numero_produtores)
+    
+    @numero_produtores.setter
+    def numero_produtores(self,valor):
+        raise AttributeError("Acesso Negado! O atributo '_numero_produtores' não pode ser modificado diretamente!")
+    
     async def parsing(self):
+
+        #Verificando cacheamento antes da execução da lógica interna de 'parsing'
+        if self._dict_links_result:
+            return dict(self._dict_links_result)
 
         ### Variáveis ###
 
@@ -129,9 +162,6 @@ class ParserHTMLPinterest(ParserHTML):
 
         self.logger.debug("[PARSING] Bots de requisição e parsing finalizados! Encerrando o programa e retornando dicionario contendo as listas com todos os links de imagens")
         return dict(self._dict_links_result)
-        
-        #DEBUG
-        #print(f"Quantidade de ações realizadas pelo bots => {self.contador_de_acoes}")
 
     async def _bot_requisicao(self,numero:int, prompt:str, lista_links_pin:list[str], fila:asyncio.Queue, evento:asyncio.Event, semaforo:asyncio.Semaphore) -> None:
 
@@ -176,15 +206,6 @@ class ParserHTMLPinterest(ParserHTML):
                             if resp.status == 200:
                                 self.logger.debug(f"[BOT_REQ - {numero}] Requisição do link => {link} - bem sucedida! Capturando página HTML do link => {link}")
                                 html = await resp.text()
-
-                                
-                                #DEBUG
-                                #Salvando pagina requisitada para verificar se existe o link nela
-                                #async with lock:
-                                #    salva_pagina_html(html)
-                                #    self.contador_de_acoes += 1
-                                
-
                                 lista_html_img.append(html)
                                 self.logger.debug(f"[BOT_REQ - {numero}] - Página HTML do link => {link} capturada! encerrando loop de requisição.")
                                 break
@@ -304,7 +325,12 @@ def main():
     try:
         parser = ParserHTMLPinterest(dict_links,logger)
         print(asyncio.run(parser.parsing()))
-    
+
+        #Testando Cacheamento do valor de '_dict_links_result
+        print("Chamando método 'parsing' novamente para verificar o cacheamento do valor de 'self.dict_links_result'")
+        print("\n\n")
+        print(asyncio.run(parser.parsing()))
+        
     except KeyboardInterrupt as error:
         logger.debug(f"[MAIN] Interrupção do teclado detectada! Interrompendo programa....")
     
