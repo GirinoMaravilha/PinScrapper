@@ -28,6 +28,7 @@ def test_testando_conexao_pinterest(lista_url):
 
     for url in lista_url:
 
+        #Verificando se a conexão do módulo com o servidor é valida atravez apenas de uma requsição
         html = requests.get(url)
         assert html.status_code == 200
         assert "Pinterest" in html.text
@@ -50,11 +51,11 @@ def test_testando_parsing_link(pagina_html):
 
         soup = BeautifulSoup(pagina_html,"html.parser")
 
-        #Seletores para encontrar o link da imagem
+        #Tentando encontrar a tag '<img>' dentro da página HTML
         div = soup.find("div",attrs={"data-test-id":"pin-closeup-image"})
-
         img = div.find("img")
 
+        #Verificando resultados
         assert "i.pinimg.com" in img['src'] 
         assert ".jpg" in img['src']
        
