@@ -29,6 +29,7 @@ def test_testando_conexao_pinterest(lista_url):
     for url in lista_url:
 
         html = requests.get(url)
+        assert html.status_code == 200
         assert "Pinterest" in html.text
 
 
