@@ -262,9 +262,9 @@ def salva_imagem(img_bytes:str):
             n_items += 1
     
     #Abrindo arquivo com a opção de escrever bytes 'wb' para salvar a imagem
-    with open(f"img - {n_items+1}.jpg","wb",encoding="UTF-8") as img:
+    with open(f"img - {n_items+1}.jpg","wb") as img:
         img.write(img_bytes)
-        
+
 
 def salva_links(dict_links:dict[str,list[str]]) -> None:
 
