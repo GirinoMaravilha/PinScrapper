@@ -104,6 +104,9 @@ class Downloader:
 
         ### Código ###
 
+        self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Bot inicializado!")
+        self.logger.info(f"Fazendo o download das imagens do prompt => {prompt}")
+
         #Abrimos um bloco 'Semaphore' para limitar o numero de interações por 'task'
         async with semaforo:
             async with aiohttp.ClientSession() as session:
@@ -113,6 +116,7 @@ class Downloader:
                     #Reiniciando o numero de tentativas de requisição
                     n_req = 0
 
+                    self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Tentando fazer a requisição do link => {link}")
                     while True:
                         async with session.get(link) as resp:
                             #Verificando status da resposta
@@ -121,8 +125,11 @@ class Downloader:
                                 #Retirando bytes da imagem da requisição
                                 img_io = await resp.read()
 
-                                #Atribuindo bytes da imagem a lista de bytes
+                                self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Requisição bem sucedida! Armazenando bytes do link => {link} - na lista 'lista_img_bytes'")
+
+                                #Atribuindo bytes da imagem a lista de bytes e passando para o proximo link
                                 lista_img_bytes.append(img_io)
+                                break
                             
                             else:
                                 n_req += 1
@@ -136,11 +143,15 @@ class Downloader:
                                     self.logger.debug(f"\n[BOT_REQUISICAO - {numero_id}] - Número limite de tentativas alcançado! Ignorando o link => {link} - e seguindo com o fluxo....")
                                     self.logger.info(f"Limite de tentativas de requisição para o link => {link} do prompt '{prompt}' excedido! Vamos ignora-lo por enquanto e seguir em frente...")
                                     break
-
+        
         #Colocando tupla de prompt com a lista de bytes na pipeline
+        self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Inserindo tupla com o prompt e a lista de bytes 'lista_img_bytes' na pipeline")
         await fila.put((prompt, lista_img_bytes)) 
 
+        self.logger.info(f"Download das imagens do prompt => {prompt} - Finalizado!")
+
         #Sinalizando introdução na pipeline e verificando se pode ativar a flag do 'Event'
+        self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Sinalizando fim da produção e verificando o numero de produtores ativos, caso não haja nenhum, ativando flag do 'Event'")
         async with lock:
             self._numero_produtores -= 1
             if not self._numero_produtores:
