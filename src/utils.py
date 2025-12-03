@@ -227,6 +227,45 @@ def salva_html(dict_html:dict[str:str]) -> None:
             arq.write(pagina)
 
 
+def salva_imagem(img_bytes:str):
+
+    """
+    Função que recebe uma imagem em formato de bytes, e a salva dentro de um diretório.
+
+    Args:
+        img_bytes (str): Imagem em formato de bytes.
+    """
+
+    ### Variáveis ###
+
+    #Tempo atual da execução da função
+    tempo = ""
+
+    #Instancia da classe Path
+    path = None
+
+    #Valor de items dentro do diretório registrado no 'Path'
+    n_items = 0
+
+    ### Código ###
+
+    #Capturando o valor do tempo atual
+    tempo = time.strftime(fr"%d %m %Y",time.localtime())
+
+    #Iniciando instância 'Path' e criando diretório
+    path = Path("imagens_debug")
+    path.mkdir(exist_ok=True)
+
+    #Verificando quantidade de items 
+    for item in path.iterdir():
+        if "img" in item:
+            n_items += 1
+    
+    #Abrindo arquivo com a opção de escrever bytes 'wb' para salvar a imagem
+    with open(f"img - {n_items+1}.jpg","wb") as img:
+        img.write(img_bytes)
+
+
 def salva_links(dict_links:dict[str,list[str]]) -> None:
 
     """
