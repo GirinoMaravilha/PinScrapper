@@ -24,6 +24,7 @@ import aiohttp
 from pathlib import Path
 import logging
 from utils import configurando_logger
+from utils import salva_imagem
 
 
 # Classes
@@ -125,6 +126,9 @@ class Downloader:
                                 #Retirando bytes da imagem da requisição
                                 img_io = await resp.read()
 
+                                #DEBUG para testar se estamos pegando bytes das imagens corretamente
+                                salva_imagem(img_io)
+
                                 self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Requisição bem sucedida! Armazenando bytes do link => {link} - na lista 'lista_img_bytes'")
 
                                 #Atribuindo bytes da imagem a lista de bytes e passando para o proximo link
@@ -155,6 +159,7 @@ class Downloader:
         async with lock:
             self._numero_produtores -= 1
             if not self._numero_produtores:
+                self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Todos os produtores terminaram! Ativando a flag do 'Event'.")
                 evento.set()
 
     async def _bot_salva_imagens(self):
@@ -164,7 +169,18 @@ class Downloader:
 #Função Main para Depuração
 
 def main():
-    pass
+
+    dict_links_img = {'Mimi Digimon Adult': ['https://i.pinimg.com/736x/72/99/b3/7299b363d59eaba3ba8cccece96a2815.jpg', 'https://i.pinimg.com/736x/90/6e/c5/906ec59eb6f1dd2780eaa283db59e4fe.jpg', 
+                                             'https://i.pinimg.com/736x/96/b1/34/96b134d9a605eac02a1a1693137b3974.jpg', 'https://i.pinimg.com/736x/39/c5/ac/39c5ac79e3782ff576ad3f6a6b4351f2.jpg', 
+                                             'https://i.pinimg.com/736x/3f/e7/d1/3fe7d1fa3a4ad1178ead57451f7a52df.jpg', 'https://i.pinimg.com/736x/6b/72/cb/6b72cbfb5e7600b783b6b76055b803fd.jpg', 
+                                             'https://i.pinimg.com/736x/14/99/c6/1499c6640b438ab19bf875fca1a96b39.jpg', 'https://i.pinimg.com/736x/e0/fb/6a/e0fb6ad2da0893929b85c51b28f79001.jpg', 
+                                             'https://i.pinimg.com/736x/a0/dc/d7/a0dcd7433bf03afc4ceb9beadce63716.jpg', 'https://i.pinimg.com/736x/fb/15/f3/fb15f35b662608853cca87e2e8347d9c.jpg']}
+    
+    logger = configurando_logger(debug_mode=True)
+    d = Downloader(logger,dict_links_img)
+
+    #Testando instancia de Downloader
+    asyncio.run(d.downloading())
 
 
 if __name__ == "__main__":

@@ -253,16 +253,16 @@ def salva_imagem(img_bytes:str):
     tempo = time.strftime(fr"%d %m %Y",time.localtime())
 
     #Iniciando instância 'Path' e criando diretório
-    path = Path("imagens_debug")
+    path = Path(f"imagens_debug {tempo}")
     path.mkdir(exist_ok=True)
 
     #Verificando quantidade de items 
     for item in path.iterdir():
-        if "img" in item:
+        if "img" in str(item):
             n_items += 1
     
     #Abrindo arquivo com a opção de escrever bytes 'wb' para salvar a imagem
-    with open(f"img - {n_items+1}.jpg","wb") as img:
+    with open(f"{path}/img - {n_items+1}.jpg","wb") as img:
         img.write(img_bytes)
 
 
