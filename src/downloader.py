@@ -43,6 +43,7 @@ from utils import configurando_logger
 from utils import salva_imagem
 from pathlib import Path
 import time
+from types import MappingProxyType
 
 
 # Classes
@@ -73,6 +74,24 @@ class Downloader:
         self._dict_lista_links = dict_lista_links
         self.logger = logger
         self._numero_produtores = len(dict_lista_links)
+
+    #Encapsulamentos de attributo '_dict_lista_links'
+    @property
+    def dict_lista_links(self):
+        return MappingProxyType(self._dict_lista_links)
+    
+    @dict_lista_links.setter
+    def dict_lista_links(self,valor):
+        raise AttributeError("Acesso Negado! O valor de 'dict_lista_links' não pode ser modificado diretamente! Crie uma nova instancia para realizar esse feito!")
+
+    #Encapsulamento do atributo '_numero_produtores'
+    @property
+    def numero_produtores(self):
+        return self._numero_produtores
+    
+    @numero_produtores.setter
+    def numero_produtores(self,valor):
+        raise AttributeError("Acesso negado! O valor de '_numero_produtores' não pode ser modificado diretamente!")
         
     async def downloading(self) -> None:
 
