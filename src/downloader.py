@@ -1,18 +1,28 @@
 """
-Módulo responsável por disponibilizar parsers de páginas HTML para diferentes sites.
+Módulo responsável por disponibilizar um downloader para a requisição e o registro de imagens no SO.
 
-Atualmente, este módulo fornece a classe `ParserImagensPinterest`, que implementa
-as funcionalidades necessárias para realizar a requisição da pagina HTML dos links 
-que contem as imagens dos pins, e a retirada de todo os links das imagens, que são colocados
-em um dicionário, que leva como chave para cada lista de links, o prompt que a gerou. 
+O módulo implementa a classe 'Downloader', que recebe um dicionario contendo chaves que são 'prompts' de
+pesquisa e a lista de links de imagens associadas a cada um deles, e realiza a requisição ao servidor delas
+e salva essas imagens no SO.
 
 Dependências:
-    - bs4
     - aiohttp
     - utils.py (módulo interno desta aplicação)
 
-Exemplo:
-    
+Exemplo de utilização:
+
+dict_links_img = {'Mimi Digimon': ['https://i.pinimg.com/736x/72/99/b3/7299b363d59eaba3ba8cccece96a2815.jpg', 'https://i.pinimg.com/736x/90/6e/c5/906ec59eb6f1dd2780eaa283db59e4fe.jpg', 
+                                            'https://i.pinimg.com/736x/96/b1/34/96b134d9a605eac02a1a1693137b3974.jpg', 'https://i.pinimg.com/736x/39/c5/ac/39c5ac79e3782ff576ad3f6a6b4351f2.jpg', 
+                                            'https://i.pinimg.com/736x/3f/e7/d1/3fe7d1fa3a4ad1178ead57451f7a52df.jpg', 'https://i.pinimg.com/736x/6b/72/cb/6b72cbfb5e7600b783b6b76055b803fd.jpg', 
+                                            'https://i.pinimg.com/736x/14/99/c6/1499c6640b438ab19bf875fca1a96b39.jpg', 'https://i.pinimg.com/736x/e0/fb/6a/e0fb6ad2da0893929b85c51b28f79001.jpg', 
+                                            'https://i.pinimg.com/736x/a0/dc/d7/a0dcd7433bf03afc4ceb9beadce63716.jpg', 'https://i.pinimg.com/736x/fb/15/f3/fb15f35b662608853cca87e2e8347d9c.jpg']}
+ 
+                
+logger = configurando_logger(debug_mode=False)
+d = Downloader(logger,dict_links_img)
+
+asyncio.run(d.downloading())
+
 
 Notas:
     Este módulo não deve ser executado diretamente, utilize ele apenas via 'import'.
