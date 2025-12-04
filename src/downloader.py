@@ -30,8 +30,8 @@ Notas:
 """
 
 #TODO Tarefas que ainda faltam:
-#- Fazer a documentação do módulo
-#- Fazer a documentação dos métodos e classes
+#- Fazer a documentação do módulo - Ok! :D
+#- Fazer a documentação dos métodos e classes - Ok! :D
 #- Fazer o encapsulamento dos atributos
 #- Verificar se existem mais exceções para serem tratadas
 
@@ -49,13 +49,40 @@ import time
 
 class Downloader:
 
+    """
+    Classe que implementa um 'Downloader' para requisição e registro de imagens no Sistema Operacional
+
+    A classe recebe uma dicionário contendo chaves que são 'prompts' de pesquisa e listas com links de imagens associadas
+    a este prompt(Que foram geradas por ele).
+
+    No caso a instancia da classe realiza a requisição dos bytes de cada imagem ao servidor, e salva esses bytes em forma imagem (JPEG)
+    no Sistema Operacional, dentro de um diretório que leva o nome do prompt.
+
+    Attributes:
+        _dict_lista_links (dict[str,list[str]]): Dicionário, que tem como seu valor, listas de links de imagens JPEG, e o  prompt que as geraram como chave. 
+                                                 O atributo é encapsulado e não deve ser modificado diretamente.
+
+        logger (Logger): Logger usado para registrar mensagens e exceções.
+
+        _numero_de_produtores (int): A quantidade de 'tasks' ou 'corroutines' que teram que ser criados para lidar como o numero de requisições. Leva o mesmo 
+                                     valor da quantidade de valores do atributo '_dict_lista_links'. O atributo é encapsulado e não deve ser modificado diretamente.
+    """
+
     def __init__(self,logger:logging.Logger,dict_lista_links:dict[str,list[str]]):
 
         self._dict_lista_links = dict_lista_links
         self.logger = logger
         self._numero_produtores = len(dict_lista_links)
         
-    async def downloading(self):
+    async def downloading(self) -> None:
+
+        """
+        Método principal da classe 'Downloader' que inicia o fluxo de requisição e registro de imagens no SO.
+
+        O método assíncrono 'downloading' inicia dois conjuntos de 'tasks' assíncronas ao mesmo tempo, sendo elas
+        do método '_bot_requisicao' e '_bot_salva_imagens', ambas criando o fluxo de requisição e registro de imagens no
+        Sistema Operacional atravez da utilização de uma pipeline.
+        """
         
         ### Variáveis ###
 
@@ -109,6 +136,37 @@ class Downloader:
         self.logger.debug("[DOWNLOADING] - Bots de requisição e salvar imagens finalizados! Encerrando o programa!")
 
     async def _bot_requisicao(self,numero_id:int,prompt:str,lista_links_img:list[str],fila:asyncio.Queue,evento:asyncio.Event, semaforo:asyncio.Semaphore, lock:asyncio.Lock) -> None:
+
+        """
+        Método que realiza a requisição de imagens, em formato bytes, ao servidor.
+
+        O método '_bot_requisicao' utiliza uma lista de links de imagens, localizada no argumento 'lista_links_img' para realizar
+        a requisição dos bytes de cada imagem dela ao servidor, sendpo que cada imagem em formato de bytes, é atribuida a uma nova lista.
+
+        Após o fim da requisição, o método insere dentro de uma pipeline ('fila') uma tupla, contendo o 'prompt' fornecido nos argumentos, e
+        a lista de bytes de cada imagem. Quem recebe essa tupla é o método '_bot_salva_imagens', que cuida do registro de cada uma no SO.
+
+        Após gera o valor, o método sinaliza o fim de sua produção, decrementando em '1' o valor so atributo '_numero_produtores' e verificando
+        se ainda existe produtores ativos. Se não existir (numero do atributo igual a 'zero') ele ativva a flag 'set', do argumento 'evento'(asyncio.Event).
+
+        Args:
+            numero_id (int): Número de identificação de cada instancia do método '_bot_requisicao' criado.
+
+            prompt (str): 'Prompt' de pesquisa associado a lista de links de imagem.(O 'prompt' que gerou as imagens no site de pesquisa).
+
+            lista_links_img (list[str]): Lista contendo os links de cada imagem. Utilizada pelo método para realizar a requisição de cada imagem ao servidor.
+
+            fila (asyncio.Queue): Instancia da classe 'Queue' do módulo 'asyncio'. Utilizada para a criação da pipeline que implementa o fluxo de geração e produção
+                                  de valores entre os métodos assíncronos '_bot_requisicao' e '_bot_salva_imagens'.
+
+            evento (asyncio.Event): Instancia da classe 'Event' do módulo 'asyncio'. Utilizada para sinalizar o fim total de toda a produção do fluxo da pipeline.
+
+            semaforo (asyncio.Semaphore): Instancia da classe 'Semaphore' do módulo 'asyncio'. Utilizada para limitar o acesso de multiplas 'tasks' a uma área do código.
+
+            lock (asyncio.Lock): Instancia da classe 'Lock' do módulo 'asyncio'. Mesma utilização do 'Semaphore', porem com uma diferença, a limitação de acesso pelas 'tasks'
+                                 é muito mais 'rigida', limitando o acesso apenas para 1 'task' por vez.
+            
+        """
 
         ### Variáveis ###
 
@@ -182,6 +240,24 @@ class Downloader:
 
     async def _bot_salva_imagens(self, numero_id:int, fila:asyncio.Queue, evento:asyncio.Event) -> None:
         
+        """
+        Método assíncrono responsável por registrar as imagens no Sistema Operacional.
+
+        O método retira da pipeline ('fila') o valor fornecido por um dos produtores '_bot_requisicao'. Dentro desse valor
+        se encontra uma string que é o 'prompt' que gerou as imagens no site de pesquisa, e uma lista de imagens em formato bytes.
+
+        Ele então utiliza o método auxiliar '_salva_imagens' para fazer o registro de todas elas no SO.
+        
+        Args:
+            numero_id (int): Número de identificação de cada instância criada do método '_bot_salva_imagens'.
+
+            fila (asyncio.Queue): Instancia da classe 'Queue' do módulo 'asyncio'. Utilizada para a criação da pipeline que implementa o fluxo de geração e produção
+                                  de valores entre os métodos assíncronos '_bot_requisicao' e '_bot_salva_imagens'.
+
+            evento (asyncio.Event): Instancia da classe 'Event' do módulo 'asyncio'. Utilizada aqui para verificar se a produção da pipeline terminou completamente.
+
+        """
+
         ### Variáveis ###
 
         #Valor do prompt e lista de bytes de imagens do mesmo
@@ -220,6 +296,30 @@ class Downloader:
                 continue
     
     def _salva_imagens(self, prompt:str, lista_bytes_img:list[str]) -> None:
+
+        """
+        Método auxiliar que resgitra todas as imagens no Sistema Operacional
+
+        Este método é uma ferramenta do método assíncrono '_bot_salva_imagens'. Ele deixa mais organizado
+        e legivel o processo de registro das imagens no SO.
+
+        O que ele faz é criar um diretório geral para registrar todos os downloads de imagem que leva o nome de
+        'Imagens_Pinterest' e também a data que a aplicação foi executada.
+
+        Após isso, dentro desse diretório, ele ira criar diretórios que levam o nome de cada 'prompt' passado no argumento
+        justamente para as imagens associadas a cada um deles, serem salva de acordo com o 'prompt' que as geraram.
+
+        Caso o 'prompt' tenha algum valor 'proibido' para registro de nomes de diretório no SO, o método então cria um diretório
+        genérico chamado 'Captura_de_imagens' que leva a hora da execução da aplicação. Nesse diretório ira ficar todas as imagens
+        com prompts que possuem valores "bloqueados" para a criação de diretórios.
+
+        Assim, cada imagem é salva no diretório que tem como o nome, o 'prompt' que a gerou;
+        
+        Args:
+            prompt (str): 'Prompt' que esta associado a lista de imagens em formato bytes.
+
+            lista_bytes_img (list[str]): Lista de imagens JPEG em formato bytes.
+        """
 
         ### Variáveis ###
 
