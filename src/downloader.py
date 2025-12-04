@@ -33,7 +33,7 @@ Notas:
 #- Fazer a documentação do módulo - Ok! :D
 #- Fazer a documentação dos métodos e classes - Ok! :D
 #- Fazer o encapsulamento dos atributos - Ok! :D
-#- Verificar se existem mais exceções para serem tratadas
+#- Verificar se existem mais exceções para serem tratadas - Ok! 
 
 import asyncio
 import aiohttp
