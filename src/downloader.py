@@ -32,7 +32,7 @@ Notas:
 #TODO Tarefas que ainda faltam:
 #- Fazer a documentação do módulo - Ok! :D
 #- Fazer a documentação dos métodos e classes - Ok! :D
-#- Fazer o encapsulamento dos atributos
+#- Fazer o encapsulamento dos atributos - Ok! :D
 #- Verificar se existem mais exceções para serem tratadas
 
 import asyncio
@@ -40,7 +40,6 @@ import aiohttp
 from pathlib import Path
 import logging
 from utils import configurando_logger
-from utils import salva_imagem
 from pathlib import Path
 import time
 from types import MappingProxyType
@@ -75,6 +74,10 @@ class Downloader:
         self.logger = logger
         self._numero_produtores = len(dict_lista_links)
 
+        #Verificando se o dicionário passado é uma instancia de 'dict' e não esta vazio
+        if not self._dict_lista_links or not isinstance(self._dict_lista_links,dict):
+            raise ValueError("O valor passado para o argumento 'dict_lista_links' ou esta vazio ou não é uma instancia de 'dict'.")
+
     #Encapsulamentos de attributo '_dict_lista_links'
     @property
     def dict_lista_links(self):
@@ -92,7 +95,8 @@ class Downloader:
     @numero_produtores.setter
     def numero_produtores(self,valor):
         raise AttributeError("Acesso negado! O valor de '_numero_produtores' não pode ser modificado diretamente!")
-        
+    
+    #Métodos
     async def downloading(self) -> None:
 
         """
@@ -157,7 +161,7 @@ class Downloader:
     async def _bot_requisicao(self,numero_id:int,prompt:str,lista_links_img:list[str],fila:asyncio.Queue,evento:asyncio.Event, semaforo:asyncio.Semaphore, lock:asyncio.Lock) -> None:
 
         """
-        Método que realiza a requisição de imagens, em formato bytes, ao servidor.
+        Método encapsulado assíncrono  que realiza a requisição de imagens, em formato bytes, ao servidor.
 
         O método '_bot_requisicao' utiliza uma lista de links de imagens, localizada no argumento 'lista_links_img' para realizar
         a requisição dos bytes de cada imagem dela ao servidor, sendpo que cada imagem em formato de bytes, é atribuida a uma nova lista.
@@ -221,9 +225,6 @@ class Downloader:
                                 #Retirando bytes da imagem da requisição
                                 img_io = await resp.read()
 
-                                #DEBUG para testar se estamos pegando bytes das imagens corretamente
-                                #salva_imagem(img_io)
-
                                 self.logger.debug(f"[BOT_REQUISICAO - {numero_id}] Requisição bem sucedida! Armazenando bytes do link => {link} - na lista 'lista_img_bytes'")
 
                                 #Atribuindo bytes da imagem a lista de bytes e passando para o proximo link
@@ -260,7 +261,7 @@ class Downloader:
     async def _bot_salva_imagens(self, numero_id:int, fila:asyncio.Queue, evento:asyncio.Event) -> None:
         
         """
-        Método assíncrono responsável por registrar as imagens no Sistema Operacional.
+        Método encapsulado assíncrono responsável por registrar as imagens no Sistema Operacional.
 
         O método retira da pipeline ('fila') o valor fornecido por um dos produtores '_bot_requisicao'. Dentro desse valor
         se encontra uma string que é o 'prompt' que gerou as imagens no site de pesquisa, e uma lista de imagens em formato bytes.
@@ -338,6 +339,10 @@ class Downloader:
             prompt (str): 'Prompt' que esta associado a lista de imagens em formato bytes.
 
             lista_bytes_img (list[str]): Lista de imagens JPEG em formato bytes.
+        
+        Raises:
+            (ValueError,OSError): Exceções levantandas, quado o 'prompt' utilizado para a criação de diretórios,
+                                  possui algum caractére proibído para esta ação dentro do SO.
         """
 
         ### Variáveis ###
