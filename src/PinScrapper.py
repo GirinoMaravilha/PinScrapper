@@ -88,6 +88,9 @@ def main():
         pinscrapper = PinScrapper(logger,lista_prompt,webdriver.Chrome(),20)
         pinscrapper.principal(crawler,parser,downloader)
     
+    except KeyboardInterrupt as error:
+        logger.info("\nInterrupção do teclado detectada! Encerrando o programa....")
+    
     except Exception as error:
         logger.info("Uma exceção ocorreu! Verifique o log dela no arquivo 'Error.log'")
         logger.error(f"Erro!\nExceção =>{error}\nTraceback => {format_exc()}")
