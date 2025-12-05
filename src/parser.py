@@ -181,7 +181,6 @@ class ParserHTMLPinterest(ParserHTML):
         ### Código ###
 
         self.logger.debug(f"\n[PARSING] Método 'parsing' da classe 'ParserHTMLPinterest' iniciado!")
-        self.logger.info(f"Iniciando a coleta dos links das imagens!")
 
         #Iniciando instancias que seram utilizadas
         fila = asyncio.Queue()

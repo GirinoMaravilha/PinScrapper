@@ -54,21 +54,24 @@ class PinScrapper:
 
         #Iniciando instancia do crawler e chamando método para conseguir os links de cada pin
         c = crawler(self.driver,self.logger,self.lista_prompt)
-        self.logger.info("Pesquisando as imagens...")
-        print("\n\n")
+        self.logger.info("\n\nPesquisando as imagens...")
+        print("\n")
         dict_lista_links_pin = c.bot_crawler(max_img=self.max_img)
 
         #Iniciando instancia do parser e chamando métodos assíncrono para conseguir os links de cada imagem
         p = parser(dict_lista_links_pin,self.logger)
-        self.logger.info("Capturarando os links de cada imagem...")
-        print("\n\n")
+        self.logger.info("\n\nIniciando coleta do link de cada imagem!")
+        print("\n")
         dict_lista_links_img = asyncio.run(p.parsing())
 
         #Iniciando instancio do downloades e chamando método assincrono para baixar todas as imagens e salva-las no SO
         d = downloader(self.logger, dict_lista_links_img)
-        self.logger.info("Fazendo o downloads das imagem...")
-        print("\n\n")
+        self.logger.info("\n\nFazendo o downloads das imagem...")
+        print("\n")
         asyncio.run(d.downloading())
+
+        #Finalizando programa
+        self.logger.info("\nDownload de todas as imagens finalizado! Encerrando PinScrapper...")
 
 
 #Função Main
@@ -79,7 +82,7 @@ def main():
     crawler = CrawlerPinterest
     parser = ParserHTMLPinterest
     downloader = Downloader
-    lista_prompt = ["Android 18","Lucy Heartfilia Hot"]
+    lista_prompt = ["Lucy Heartfilia hot","Blonde anime girl"]
 
     try:
         pinscrapper = PinScrapper(logger,lista_prompt,webdriver.Chrome(),20)

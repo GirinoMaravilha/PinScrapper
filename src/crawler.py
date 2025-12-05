@@ -173,7 +173,7 @@ class CrawlerPinterest(Crawler):
         #Iniciando iteração dos prompts
         self.logger.debug("[BOT-CRAWLER] Iniciando método 'bot_crawler' para retornar paginas HTML com links de PIN's disponíveis.")
 
-        self.logger.info("\nEntrando no site do Pinterest....")
+        self.logger.info("Entrando no site do Pinterest....")
         self.logger.debug("[BOT-CRAWLER] Método 'bot_crawler' iniciado. Iniciando a iteração dos valores da lista" \
         " 'self.lista_prompt'")
 
@@ -184,14 +184,14 @@ class CrawlerPinterest(Crawler):
             stale_n = 0
 
             #Entrando no site e achando o input de pesquisa
-            self.logger.info(f"Começando a procurar imagens do prompt => {prompt}")
+            self.logger.info(f"\nComeçando a procurar imagens do prompt => {prompt}")
             self.logger.debug(f"[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
 
             #Aqui iniciamos um bloco try para tentar reconexões caso a primeira requisição falhe
             while True:
                 try:
                     self.logger.debug(f"\n[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
-                    self.logger.info(f"Realizando a requisição para o o Pinterest com o prompt => {prompt}")
+                    self.logger.info(f"\nRealizando a requisição para o o Pinterest com o prompt => {prompt}")
 
                     self.driver.get(f"https://br.pinterest.com/search/pins/?q={prompt}&rs=typed")
                     break
@@ -229,7 +229,7 @@ class CrawlerPinterest(Crawler):
 
                     #Veririfcando se a quantidade bate com a que foi requisitada
                     if len(lista_pin_final) < max_img:
-                        self.logger.info(f"Achamos apenas {len(lista_pin_final)} imagens para o prompt => {prompt}")
+                        self.logger.info(f"\nAchamos apenas {len(lista_pin_final)} imagens para o prompt => {prompt}")
                         self.logger.info("Vamos procurar mais....")
 
                         #DEBUG
@@ -247,7 +247,7 @@ class CrawlerPinterest(Crawler):
                     else:
                         #Salvando o HTML estatico no dicionario 'dict_pagina_html' tendo a chave como prompt
                         self.logger.debug(f"\n[BOT-CRAWLER] Achamos {len(lista_pin_final)} imagens da requisição de {max_img} imagens.")
-                        self.logger.info(f"Achamos todas as imagens! Salvando os links das imagens do prompt => {prompt}")
+                        self.logger.info(f"\nAchamos todas as imagens! Salvando os links das imagens do prompt => {prompt}")
                         
                         #Fazemos o slice da lista, limitando o numero de elementos a quantidade que o usuário pediu
                         dict_lista_link[prompt] = lista_pin_final[0:max_img]
@@ -281,7 +281,7 @@ class CrawlerPinterest(Crawler):
         
         #Fazendo limpeza e Retornando dicionario com as paginas HTML
         self.logger.debug("\n[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
-        self.logger.info("Captura dos pins terminada!")
+        self.logger.info("\nCaptura dos pins terminada!")
         self._driver.quit()
         return dict_lista_link
     

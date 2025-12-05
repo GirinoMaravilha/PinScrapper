@@ -302,7 +302,7 @@ class Downloader:
                 self.logger.debug(f"[BOT_SALVA_IMG - {numero_id}] Valor retirado com sucesso!")
 
                 #Salvando list de imagens em um diretório que leva o nome do prompt
-                self.logger.info(f"Salvando imagens do prompt => {prompt} - no computador....")
+                self.logger.info(f"\nSalvando imagens do prompt => {prompt} - no computador....")
                 self.logger.debug(f"[BOT_SALVA_IMG - {numero_id}] Criando diretório com o nome do prompt => {prompt} e salvando imagens nele")
                 self._salva_imagens(prompt,lista_bytes_img)
 
