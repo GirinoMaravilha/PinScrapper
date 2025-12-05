@@ -40,6 +40,88 @@ import logging
 import time
 import asyncio
 from pathlib import Path
+import argparse
+
+
+def configurando_argparse(self) -> argparse.ArgumentParser:
+
+    """
+    Função auxiliar que cria e configura uma instancia da classe ArgumentParser exclusiva para este script.
+
+    Returns:
+        argparse.ArgumentParser: Retorna uma instancia da classe 'ArgumentParser' configurada.
+    """
+
+    ### Variáveis ###
+    
+    #Instancia do ArgumentParser
+    parser = None
+
+    #Descrição do script para argumento 'description'
+    descricao = ""
+
+    ### Código ###
+
+    #Criando a descrição
+    descricao = """
+    Pinscrapper.py
+
+    Scrapper que realiza a coleta e download de imagens do Pinterest.
+
+    A aplicação acessa o site do Pinterest, e utilizando os prompts que voce passou na opção 'prompts',
+    realiza a pesquisa, coleta e download de todas as imagens encontradas de cada 'pin' do site.
+
+    O script possibilita voce configurar na linha de comando:
+
+    - 'Prompts' que você quer utilizar.
+    - 'Debug Mode' ativado ou desativado (Ativa todos os logs de depuração).
+    - A quantidade de imagens que você quer coletar de cada prompt.
+    - Se você quer ver o que acontece no navegador durante o 'crawling' do site.
+      (Basicamente observar o script entrando no Pinterest, pesquisando e coletando as imagens).
+    
+    """
+
+    #Iniciando instancia 
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,description=descricao)
+
+    #Adicionando argumentos
+    parser.add_argument("prompts",type=str,help="Lista de 'prompts' que serão utilizados na pesquisa de imagens.")
+    parser.add_argument("--debug",type='store_true',help="Ativa o modo depuração do script.")
+    parser.add_argument("--img_q",type=int,default=10,help="Quantidade de imagens que devem ser coletadas de cada 'prompt'.")
+    parser.add_argument("--monitor", type="store_true", help="Ativa o modo 'monitor', fazendo o navegador ficar visível durante a pesquisa dentro do site.")
+
+    #Retornando instância 'ArgumentParser' configurada
+    return parser
+
+
+def lista_prompts(arq_txt:str) -> list[str]:
+
+    """
+    Função auxiliar que retira todas as linhas de uma arquivo texto e as retorna dentro de uma lista.
+
+    Args:
+        arq_txt (str): Nome do arquivo '.txt' contendo as linhas a serem retiradas.
+    
+    Returns:
+        list[str]: Lista contendo todas as linhas do arquivo '.txt' em format de string.
+    
+    Raises:
+        FileNotFoundError: Exceção levantada quando o arquivo passado não é '.txt'.
+    """
+
+    ### Variáveis ###
+
+    #Lista de prompts retirados do arquivo texto
+    lista_prompt = []
+
+    ### Código ###
+
+    if not ".txt" in arq_txt:
+        raise FileNotFoundError ("O arquivo passado não é um arquivo '.txt'!")
+    
+    with open(arq_txt,"r",encoding="UTF-8") as arq:
+        return arq.readlines()
+
 
 
 def configurando_logger(debug_mode:bool=False) -> logging.Logger:
