@@ -171,11 +171,9 @@ class CrawlerPinterest(Crawler):
         ### Código ###
 
         #Iniciando iteração dos prompts
-
-        self.logger.info("Crawler Iniciado!")
         self.logger.debug("[BOT-CRAWLER] Iniciando método 'bot_crawler' para retornar paginas HTML com links de PIN's disponíveis.")
 
-        self.logger.info("Entrando no site do Pinterest....")
+        self.logger.info("\nEntrando no site do Pinterest....")
         self.logger.debug("[BOT-CRAWLER] Método 'bot_crawler' iniciado. Iniciando a iteração dos valores da lista" \
         " 'self.lista_prompt'")
 
@@ -186,7 +184,7 @@ class CrawlerPinterest(Crawler):
             stale_n = 0
 
             #Entrando no site e achando o input de pesquisa
-            self.logger.info(f"\nComeçando a procurar imagens do prompt => {prompt}")
+            self.logger.info(f"Começando a procurar imagens do prompt => {prompt}")
             self.logger.debug(f"[BOT-CRAWLER] Entrando no link do pinterest => https://br.pinterest.com/search/pins/?q={prompt}&rs=typed'")
 
             #Aqui iniciamos um bloco try para tentar reconexões caso a primeira requisição falhe
@@ -231,7 +229,7 @@ class CrawlerPinterest(Crawler):
 
                     #Veririfcando se a quantidade bate com a que foi requisitada
                     if len(lista_pin_final) < max_img:
-                        self.logger.info(f"\nAchamos apenas {len(lista_pin_final)} imagens para o prompt => {prompt}")
+                        self.logger.info(f"Achamos apenas {len(lista_pin_final)} imagens para o prompt => {prompt}")
                         self.logger.info("Vamos procurar mais....")
 
                         #DEBUG
@@ -281,9 +279,10 @@ class CrawlerPinterest(Crawler):
                         raise
 
         
-        #Retornando dicionario com as paginas HTML
+        #Fazendo limpeza e Retornando dicionario com as paginas HTML
         self.logger.debug("\n[BOT-CRAWLER] Iteração de todos os prompts terminada, retornando o dicionario 'dict_pagina_html'.")
-        self.logger.info("Captura das páginas terminada!")
+        self.logger.info("Captura dos pins terminada!")
+        self._driver.quit()
         return dict_lista_link
     
     def verifica_link_pin(self, lista_pin_final:list[str], lista_pin_req:list[WebElement]) -> None:
@@ -387,7 +386,7 @@ class CrawlerPinterest(Crawler):
         #Ação caso for encontrado o texto para o problema de nenhum pin retornado pelo prompt
         if no_img:
             self.logger.debug(f"\n[BOT-CRAWLER] O problema da interrupção foi que nenhum pin retornou pelo prompt => {prompt}")
-            self.logger.info(f"Achamos o problema! Nenhuma imagem foi retornada para o prompt => {prompt}")
+            self.logger.info(f"\nAchamos o problema! Nenhuma imagem foi retornada para o prompt => {prompt}")
             self.logger.info("Seguindo com o a pesquisa de 'pins' para próximo prompt....")
             return False
         
@@ -398,7 +397,7 @@ class CrawlerPinterest(Crawler):
         #Ação caso encontrado mensagem sobre bloqueio da requisição por conteudo NSFW
         if nsfw:
             self.logger.debug(f"\n[BOT-CRAWLER] O problema da interrupção foi o prompt insinuar conteúdo NSFW => {prompt}")
-            self.logger.info(f"Achamos o problema! Nenhuma imagem foi retornada para o prompt por ele insinuar NSFW => {prompt}")
+            self.logger.info(f"\nAchamos o problema! Nenhuma imagem foi retornada para o prompt por ele insinuar NSFW => {prompt}")
             self.logger.info("Seguindo com o a pesquisa de 'pins' para próximo prompt....")
             return False
         
@@ -416,7 +415,7 @@ class CrawlerPinterest(Crawler):
             #Fazendo limpeza e levantando exceção para sair do método e a mesma ser tratada fora.
             self.driver.quit()
 
-            self.logger.info("Bloco Login e textos não encontrados! Erro grave no programa! De uma olhada no log de erro 'Error.log'!")
+            self.logger.info("\nBloco Login e textos não encontrados! Erro grave no programa! De uma olhada no log de erro 'Error.log'!")
             self.logger.error(f"[BOT-CRAWLER] Bloco login e textos não encontrados. Outra coisa não esta deixando o CrawlerPinterest encontrar as imagens.")
             
             raise 

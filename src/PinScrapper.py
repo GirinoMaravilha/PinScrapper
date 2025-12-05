@@ -9,10 +9,11 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 #from selenium.webdriver.safari.options import Options as SafariOptions
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from src.crawler import CrawlerPinterest,Crawler
-from src.parser import ParserHTMLPinterest, ParserHTML
-from src.downloader import Downloader
-from src.utils import configurando_logger
+from crawler import CrawlerPinterest,Crawler
+from parser import ParserHTMLPinterest, ParserHTML
+from downloader import Downloader
+from utils import configurando_logger
+from traceback import format_exc
 import argparse
 import logging
 import asyncio
@@ -53,21 +54,40 @@ class PinScrapper:
 
         #Iniciando instancia do crawler e chamando método para conseguir os links de cada pin
         c = crawler(self.driver,self.logger,self.lista_prompt)
+        self.logger.info("Pesquisando as imagens...")
+        print("\n\n")
         dict_lista_links_pin = c.bot_crawler(max_img=self.max_img)
 
         #Iniciando instancia do parser e chamando métodos assíncrono para conseguir os links de cada imagem
         p = parser(dict_lista_links_pin,self.logger)
+        self.logger.info("Capturarando os links de cada imagem...")
+        print("\n\n")
         dict_lista_links_img = asyncio.run(p.parsing())
 
         #Iniciando instancio do downloades e chamando método assincrono para baixar todas as imagens e salva-las no SO
         d = downloader(self.logger, dict_lista_links_img)
+        self.logger.info("Fazendo o downloads das imagem...")
+        print("\n\n")
         asyncio.run(d.downloading())
 
 
 #Função Main
 
 def main():
-    pass
+    
+    logger = configurando_logger()
+    crawler = CrawlerPinterest
+    parser = ParserHTMLPinterest
+    downloader = Downloader
+    lista_prompt = ["Android 18","Lucy Heartfilia Hot"]
+
+    try:
+        pinscrapper = PinScrapper(logger,lista_prompt,webdriver.Chrome(),20)
+        pinscrapper.principal(crawler,parser,downloader)
+    
+    except Exception as error:
+        logger.info("Uma exceção ocorreu! Verifique o log dela no arquivo 'Error.log'")
+        logger.error(f"Erro!\nExceção =>{error}\nTraceback => {format_exc()}")
 
 
 if __name__ == "__main__":
