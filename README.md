@@ -1,6 +1,5 @@
-# 🚀 Projeto Exemplo - Sistema de Gerenciamento de Tarefas
+# 🚀 PinScrapper - Scrapper de imagens do Pinterest
 
-![Status](https://img.shields.io/badge/status-em_desenvolvimento-yellow)
 ![Python](https://img.shields.io/badge/Python-3.13-blue?logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
@@ -122,7 +121,7 @@ pytest tests/
 
 ## 📄 Licença
 
-Este projeto está sob a licença [MIT](LICENSE).  
+Este projeto está sob a licença [MIT](https://github.com/GirinoMaravilha/PinScrapper?tab=MIT-1-ov-file).  
 Sinta-se livre para usar, modificar e distribuir este código.
 
 ---
