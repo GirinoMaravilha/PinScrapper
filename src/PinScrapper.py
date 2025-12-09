@@ -14,6 +14,8 @@ from parser import ParserHTMLPinterest, ParserHTML
 from downloader import Downloader
 from utils import configurando_logger
 from traceback import format_exc
+from utils import configurando_argparse
+from utils import lista_prompts
 import argparse
 import logging
 import asyncio
@@ -78,15 +80,81 @@ class PinScrapper:
 
 def main():
     
-    logger = configurando_logger()
-    crawler = CrawlerPinterest
-    parser = ParserHTMLPinterest
-    downloader = Downloader
-    lista_prompt = ["Lucy Heartfilia hot","Blonde anime girl"]
+    ### Variáveis ###
 
+    #Instancia do 'Logger'
+    logger = None
+
+    #Instancias do 'ArgumentParser'
+    argumentparser = None
+
+    #Sub-Classe da classe abstrata 'Crawler'
+    crawler = None
+
+    #Sub-Classe da classe abstrate 'ParserHTML'
+    parserhtml = None
+
+    #Argumentos passados na linha de comando do console
+    args = None
+
+    #Classe Downloader
+    downloader = None
+
+    #Instancia da classe Options do módulo selenium.webdriver.chrome
+    options = None
+
+    #Quantidade de imagens
+    img_quant = 10
+
+    #Lista contendo os prompts passados pelo usuário
+    lista_prompt = []
+
+    #Driver utilizado pelo 'Crawler'
+    driver = None
+
+    ### Código ###
+
+    #Iniciando instancias que vão ser utilizadas
+    crawler = CrawlerPinterest
+    parserhtml = ParserHTMLPinterest
+    downloader = Downloader
+
+    #Retirando argumentos passados no console pelo usuário
+    argumentparser = configurando_argparse()
+    args = argumentparser.parse_args()
+    
+    #Verificando argumentos
+    #Modo depuração
+    if args.debug:
+        logger = configurando_logger(debug_mode=True)
+    else:
+        logger = configurando_logger()
+    
+    #Modo monitor
+    if not args.monitor:
+        options = ChromeOptions()
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(options=options)
+    else:
+        driver = webdriver.Chrome()
+
+    #Quantidade de imagens
+    if not args.img_q:
+        img_quant = 10
+    else:
+        img_quant = int(args.img_q)
+    
+    #Prompts fornecidos
+    lista_prompt = lista_prompts(args.prompts)
+
+    #DEBUG
+    #print(f"Lista de prompt => {lista_prompt}\nDebug => {args.debug}\nMonitors => {args.monitor}\nQuantidade imagens => {img_quant}\n Tipo do argumento 'img_q' => {type(args.img_q)}")
+    #return
+
+    
     try:
-        pinscrapper = PinScrapper(logger,lista_prompt,webdriver.Chrome(),20)
-        pinscrapper.principal(crawler,parser,downloader)
+        pinscrapper = PinScrapper(logger,lista_prompt,driver,img_quant)
+        pinscrapper.principal(crawler,parserhtml,downloader)
     
     except KeyboardInterrupt as error:
         logger.info("\nInterrupção do teclado detectada! Encerrando o programa....")

@@ -43,7 +43,7 @@ from pathlib import Path
 import argparse
 
 
-def configurando_argparse(self) -> argparse.ArgumentParser:
+def configurando_argparse() -> argparse.ArgumentParser:
 
     """
     Função auxiliar que cria e configura uma instancia da classe ArgumentParser exclusiva para este script.
@@ -86,9 +86,9 @@ def configurando_argparse(self) -> argparse.ArgumentParser:
 
     #Adicionando argumentos
     parser.add_argument("prompts",type=str,help="Lista de 'prompts' que serão utilizados na pesquisa de imagens.")
-    parser.add_argument("--debug",type='store_true',help="Ativa o modo depuração do script.")
-    parser.add_argument("--img_q",type=int,default=10,help="Quantidade de imagens que devem ser coletadas de cada 'prompt'.")
-    parser.add_argument("--monitor", type="store_true", help="Ativa o modo 'monitor', fazendo o navegador ficar visível durante a pesquisa dentro do site.")
+    parser.add_argument("--debug",action='store_true',help="Ativa o modo depuração do script.")
+    parser.add_argument("--img_q",type=int,default=10,help="Quantidade de imagens que devem ser coletadas de cada 'prompt'. Se o número zero for fornecido, o valor padrão do argumento fica sendo '10'.")
+    parser.add_argument("--monitor", action="store_true", help="Ativa o modo 'monitor', fazendo o navegador ficar visível durante a pesquisa dentro do site.")
 
     #Retornando instância 'ArgumentParser' configurada
     return parser
@@ -120,8 +120,10 @@ def lista_prompts(arq_txt:str) -> list[str]:
         raise FileNotFoundError ("O arquivo passado não é um arquivo '.txt'!")
     
     with open(arq_txt,"r",encoding="UTF-8") as arq:
-        return arq.readlines()
-
+        for linha in arq:
+            lista_prompt.append(linha.strip())
+        
+    return lista_prompt
 
 
 def configurando_logger(debug_mode:bool=False) -> logging.Logger:
